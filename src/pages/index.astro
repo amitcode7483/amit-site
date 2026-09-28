@@ -1,0 +1,183 @@
+---
+import Base from '../layouts/Base.astro';
+import Mascot from '../components/Mascot.astro';
+import { site } from '../site.config';
+
+const brickColours = ['red', 'yellow', 'blue', 'green', 'orange', 'white'];
+const stackTwice = [...site.stack, ...site.stack];
+
+// Newest upload per channel, read from YouTube's public feed when the site is built.
+async function newestVideoId(channelId: string) {
+  try {
+    const res = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`);
+    if (!res.ok) return '';
+    return (await res.text()).match(/<yt:videoId>([\w-]{11})<\/yt:videoId>/)?.[1] ?? '';
+  } catch {
+    return '';
+  }
+}
+const channels = await Promise.all(
+  site.channels.map(async (c) => ({ ...c, videoId: (await newestVideoId(c.channelId)) || c.latestVideoId })),
+);
+---
+<Base>
+  <div class="wrap">
+    <header class="nav">
+      <a class="logo" href="#top" aria-label="Home">
+        <span class="logo-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        amit
+      </a>
+      <nav class="nav-links" aria-label="Main">
+        <a href="#work">Work</a>
+        <a href="#channels">Channels</a>
+        <a href="#about">About</a>
+        <a class="btn brick c-black" href="#contact">Let’s talk</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="hero-copy">
+          <div class="eyebrow mono"><i></i>Sydney · 20+ years building software</div>
+          <h1>
+            <span>Engineer</span>
+            <span>by day.</span>
+            <em>Creator by</em>
+            <em>weekend.</em>
+          </h1>
+          <p class="lede">
+            I’m Amit — a senior full-stack engineer (React, TypeScript, NestJS, AWS) building applied-AI
+            systems one brick at a time, and the person behind GameGeek and AusiDesi on YouTube.
+          </p>
+          <div class="ctas">
+            <a class="btn brick c-red" href="#work">See the work →</a>
+            <a class="btn brick c-white" href="#channels">Watch the channels</a>
+          </div>
+          <div class="stats">
+            {site.stats.map((s) => (
+              <div class={`stat brick c-${s.tone}`}><b>{s.value}</b><span>{s.label}</span></div>
+            ))}
+          </div>
+        </div>
+        <div class="hero-art"><Mascot /></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="strip" aria-label="Tech stack">
+    <div class="strip-track">
+      {stackTwice.map((t, i) => (
+        <span class={`brick c-${brickColours[i % brickColours.length]}`} aria-hidden={i >= site.stack.length ? 'true' : undefined}>{t}</span>
+      ))}
+    </div>
+  </div>
+
+  <div class="wrap">
+    <section class="block" id="about">
+      <div class="block-head">
+        <h2>Two sides, one person.</h2>
+        <span class="step mono"><b>1</b>About</span>
+      </div>
+      <div class="grid-2">
+        <div class="side brick c-blue">
+          <div class="inner">
+            <span class="mono">The engineer</span>
+            <h3>Enterprise platforms, twenty years deep.</h3>
+            <p>
+              Principal, lead and architect roles at Capgemini, BMC Software and Symantec. Now contracting on
+              enterprise insurance platforms in Sydney — and going deep on applied AI: RAG, vector search and LLM
+              orchestration on AWS.
+            </p>
+          </div>
+          <a class="btn brick c-yellow" href="#work">Selected work ↓</a>
+        </div>
+        <div class="side brick c-red">
+          <div class="inner">
+            <span class="mono">The creator</span>
+            <h3>GameGeek and AusiDesi.</h3>
+            <p>
+              Games on one channel, Sydney life on the other. Shorts-first, hand-edited, and made on weekends —
+              the same care for the hook that goes into a good API.
+            </p>
+          </div>
+          <a class="btn brick c-white" href="#channels">The channels ↓</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" id="work">
+      <div class="block-head">
+        <h2>Things I’ve built.</h2>
+        <span class="step mono"><b>2</b>Work</span>
+      </div>
+      <div class="grid-3">
+        {site.projects.map((p) => {
+          const Tag = p.href ? 'a' : 'article';
+          return (
+            <Tag class="project" href={p.href || undefined} target={p.href ? '_blank' : undefined} rel={p.href ? 'noopener' : undefined}>
+              <div class={`project-visual brick c-${p.tone}`}>
+                <span class="mono">{p.kicker}</span>
+                <strong>{p.visual}</strong>
+              </div>
+              <div class="project-body">
+                <div class="project-top">
+                  <h3>{p.name}</h3>
+                  <span class={`badge c-${p.badgeTone}`} style="background: var(--c)">{p.badge}</span>
+                </div>
+                <p>{p.body}</p>
+                <span class="tags">{p.tags}</span>
+              </div>
+            </Tag>
+          );
+        })}
+      </div>
+    </section>
+
+    <section class="block" id="channels">
+      <div class="block-head">
+        <h2>On the weekends.</h2>
+        <span class="step mono"><b>3</b>Channels</span>
+      </div>
+      <div class="grid-2">
+        {channels.map((c) => (
+          <div class={`channel brick c-${c.tone}`}>
+            <div class={`channel-media ${c.videoId ? 'has-video' : ''}`}>
+              {c.videoId ? (
+                <iframe
+                  src={`https://www.youtube-nocookie.com/embed/${c.videoId}`}
+                  title={`Latest ${c.name} video`}
+                  loading="lazy"
+                  allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
+                  allowfullscreen
+                ></iframe>
+              ) : (
+                <span>[Latest {c.name} Short]</span>
+              )}
+            </div>
+            <div class="channel-copy">
+              <span class="mono">{c.kicker}</span>
+              <h3>{c.name}</h3>
+              <p>{c.body}</p>
+              <a class="btn brick c-white" href={c.href} target="_blank" rel="noopener">Watch on YouTube ↗</a>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  </div>
+
+  <footer class="contact brick c-black" id="contact">
+    <div class="contact-top">
+      <h2>Got a system to build — or a story to <em>film?</em></h2>
+      <a class="btn brick c-yellow" href={`mailto:${site.email}`}>{site.email} →</a>
+    </div>
+    <div class="contact-foot">
+      <span>© {new Date().getFullYear()} {site.name} · Built in Sydney, brick by brick</span>
+      <nav aria-label="Social">
+        <a href={site.links.github} target="_blank" rel="noopener">GitHub</a>
+        <a href={site.links.linkedin} target="_blank" rel="noopener">LinkedIn</a>
+        <a href={site.links.youtube} target="_blank" rel="noopener">YouTube</a>
+      </nav>
+    </div>
+  </footer>
+</Base>

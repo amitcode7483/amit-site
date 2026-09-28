@@ -1,0 +1,159 @@
+---
+// "Bit" — an original brick-built bird whose eyes and head follow the cursor.
+// Pure SVG + a little vanilla JS. No WebGL, no video, no dependencies.
+const headStuds = [153, 223, 293, 363];
+const plateStuds = Array.from({ length: 11 }, (_, i) => 62 + i * 42);
+---
+<div class="mascot" data-mascot>
+  <svg viewBox="0 0 560 560" role="img" aria-label="Bit, a brick-built bird whose eyes follow your cursor">
+    <!-- baseplate -->
+    {plateStuds.map((x) => <rect class="stud s-green" x={x} y="488" width="26" height="14" rx="3" />)}
+    <rect class="b-green" x="40" y="498" width="480" height="40" rx="6" />
+    <rect class="shade" x="40" y="528" width="480" height="10" rx="4" />
+
+    <!-- feet -->
+    <rect class="b-orange" x="196" y="474" width="68" height="26" rx="4" />
+    <rect class="b-orange" x="296" y="474" width="68" height="26" rx="4" />
+
+    <!-- body + wings -->
+    <g data-body class="m-body">
+      <rect class="b-red" x="96" y="318" width="64" height="116" rx="8" />
+      <rect class="b-red" x="400" y="318" width="64" height="116" rx="8" />
+      <rect class="shade" x="96" y="422" width="64" height="12" rx="5" />
+      <rect class="shade" x="400" y="422" width="64" height="12" rx="5" />
+      <rect class="b-blue" x="150" y="296" width="260" height="184" rx="10" />
+      <rect class="belly" x="200" y="330" width="160" height="120" rx="8" />
+      <rect class="shade" x="150" y="466" width="260" height="14" rx="6" />
+    </g>
+
+    <!-- head -->
+    <g class="m-head" data-head>
+      {headStuds.map((x) => (
+        <>
+          <rect class="stud s-yellow" x={x} y="82" width="44" height="24" rx="5" />
+          <rect class="glare" x={x + 8} y="86" width="14" height="5" rx="2" />
+        </>
+      ))}
+      <rect class="b-yellow" x="120" y="100" width="320" height="212" rx="14" />
+      <rect class="shade" x="120" y="298" width="320" height="14" rx="6" />
+
+      <rect class="eye" x="165" y="150" width="96" height="96" rx="14" />
+      <rect class="eye" x="299" y="150" width="96" height="96" rx="14" />
+      <g data-pupils>
+        <rect class="pupil" x="194" y="181" width="38" height="38" rx="8" />
+        <rect class="pupil" x="328" y="181" width="38" height="38" rx="8" />
+        <rect class="glint" x="216" y="186" width="10" height="10" rx="2" />
+        <rect class="glint" x="350" y="186" width="10" height="10" rx="2" />
+      </g>
+      <!-- the skeptical half-lid -->
+      <rect class="b-yellow" x="162" y="146" width="102" height="30" />
+      <rect class="b-yellow" x="296" y="146" width="102" height="34" />
+      <!-- blink -->
+      <rect class="b-yellow lid" x="162" y="146" width="102" height="104" />
+      <rect class="b-yellow lid" x="296" y="146" width="102" height="104" />
+      <!-- brows -->
+      <rect class="brow brow-l" x="166" y="120" width="96" height="16" rx="4" />
+      <rect class="brow brow-r" x="298" y="116" width="96" height="16" rx="4" />
+      <!-- stepped beak -->
+      <rect class="b-orange" x="248" y="236" width="64" height="38" rx="6" />
+      <rect class="b-orange" x="262" y="268" width="36" height="20" rx="5" />
+      <rect class="shade" x="248" y="264" width="64" height="8" rx="3" />
+    </g>
+  </svg>
+  <div class="m-gaze" aria-hidden="true">
+    <span>GAZE</span>
+    <span class="m-track"><span class="m-dot" data-dot></span></span>
+    <span class="m-label" data-label>CENTRE</span>
+  </div>
+  <p class="m-hint">Move your cursor. Bit is reviewing your code.</p>
+</div>
+
+<style>
+  .mascot { display: flex; flex-direction: column; align-items: center; width: 100%; }
+  svg { width: 100%; max-width: 560px; height: auto; overflow: visible; }
+  .b-yellow { fill: var(--yellow); }
+  .b-blue { fill: var(--blue); }
+  .b-red { fill: var(--red); }
+  .b-green { fill: var(--green); }
+  .b-orange { fill: var(--orange); }
+  .s-yellow { fill: #FFD83D; }
+  .s-green { fill: #2E9152; }
+  .stud { stroke: rgba(0,0,0,.12); stroke-width: 1.5; }
+  .glare { fill: rgba(255,255,255,.55); }
+  .shade { fill: rgba(0,0,0,.18); }
+  .belly { fill: rgba(255,255,255,.14); }
+  .eye, .glint { fill: #FFFFFF; }
+  .pupil { fill: var(--ink); }
+  .brow { fill: var(--ink); transform-box: fill-box; transform-origin: center; }
+  .brow-l { transform: rotate(9deg); }
+  .brow-r { transform: rotate(-11deg); }
+  .m-head { transform-origin: 280px 320px; will-change: transform; }
+  .m-body { will-change: transform; }
+  .lid { transform-box: fill-box; transform-origin: 50% 0; transform: scaleY(0); animation: m-blink 5.5s infinite; }
+  .m-gaze { margin-top: 4px; display: flex; align-items: center; gap: 14px; font-family: var(--mono); font-size: 12px; letter-spacing: .12em; color: var(--ink-2); }
+  .m-track { position: relative; width: 180px; height: 8px; border-radius: 3px; background: #DDD8CE; box-shadow: inset 0 -2px 0 rgba(0,0,0,.1); }
+  .m-dot { position: absolute; top: -5px; left: 50%; width: 18px; height: 18px; margin-left: -9px; border-radius: 4px; background: var(--red); box-shadow: inset 0 -3px 0 rgba(0,0,0,.25); }
+  .m-label { width: 110px; }
+  .m-hint { margin: 10px 0 0; font-size: 14px; font-weight: 600; color: var(--muted); }
+  @keyframes m-blink { 0%, 93%, 100% { transform: scaleY(0); } 95.5% { transform: scaleY(1); } }
+  @media (prefers-reduced-motion: reduce) { .lid { animation: none; } }
+  @media (max-width: 720px) { .m-track { width: 120px; } }
+</style>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-mascot]');
+  if (root) {
+    const svg = root.querySelector('svg')!;
+    const head = root.querySelector<SVGGElement>('[data-head]')!;
+    const body = root.querySelector<SVGGElement>('[data-body]')!;
+    const pupils = root.querySelector<SVGGElement>('[data-pupils]')!;
+    const dot = root.querySelector<HTMLElement>('[data-dot]')!;
+    const label = root.querySelector<HTMLElement>('[data-label]')!;
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+    const EYE = { x: 280, y: 198 }; // midpoint between the eyes, in SVG units
+
+    let target = { dx: -60, dy: 10 };
+    const cur = { dx: -60, dy: 10 };
+    let lastMove = 0;
+
+    function aim(clientX: number, clientY: number) {
+      const r = svg.getBoundingClientRect();
+      const scale = 560 / r.width;
+      target = { dx: (clientX - r.left) * scale - EYE.x, dy: (clientY - r.top) * scale - EYE.y };
+      lastMove = performance.now();
+    }
+    addEventListener('pointermove', (e) => aim(e.clientX, e.clientY), { passive: true });
+    document.addEventListener('pointerleave', () => { target = { dx: -60, dy: 10 }; });
+
+    let visible = true;
+    new IntersectionObserver(([e]) => { visible = e.isIntersecting; }).observe(root);
+
+    function frame(t: number) {
+      requestAnimationFrame(frame);
+      if (!visible) return;
+      // No pointer for a while (e.g. on a phone): Bit glances around on his own.
+      if (t - lastMove > 3500) target = { dx: Math.sin(t / 1800) * 420, dy: Math.cos(t / 2600) * 120 };
+      const ease = reduced ? 1 : 0.14;
+      cur.dx += (target.dx - cur.dx) * ease;
+      cur.dy += (target.dy - cur.dy) * ease;
+
+      const k = Math.min(1, Math.hypot(cur.dx, cur.dy) / 380);
+      const ang = Math.atan2(cur.dy, cur.dx);
+      pupils.style.transform = `translate(${Math.cos(ang) * 18 * k}px, ${Math.sin(ang) * 16 * k}px)`;
+
+      if (!reduced) {
+        const tilt = clamp(cur.dx / 80, -8, 8);
+        const hx = clamp(cur.dx / 40, -18, 18);
+        const hy = clamp(cur.dy / 70, -8, 8);
+        head.style.transform = `translate(${hx}px, ${hy}px) rotate(${tilt}deg)`;
+        body.style.transform = `translateX(${hx * 0.3}px)`;
+      }
+
+      const deg = Math.round(clamp(cur.dx / 800, -1, 1) * 60);
+      dot.style.left = `${50 + (deg / 60) * 50}%`;
+      label.textContent = Math.abs(deg) < 3 ? 'CENTRE' : `${Math.abs(deg)}° ${deg < 0 ? 'LEFT' : 'RIGHT'}`;
+    }
+    requestAnimationFrame(frame);
+  }
+</script>
