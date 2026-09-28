@@ -58,10 +58,10 @@ export const site = {
       kicker: 'Gaming',
       body: 'Games, hands-on. A 48k-strong community built one Short at a time.',
       href: 'https://www.youtube.com/@gamegeekfun',
-      // The newest upload is fetched from this channel's feed at build time.
+      // The newest non-live upload is fetched with the YouTube Data API at build time (see src/lib/latest-videos.ts).
       channelId: 'UClBs-pjC-QD4Df-HcnQIAlQ',
-      // Fallback if the feed can't be reached: a YouTube video/Short ID, e.g. 'dQw4w9WgXcQ'.
-      latestVideoId: '',
+      // Last-resort fallback if the API and src/data/latest-videos.json have nothing: a YouTube video/Short ID, e.g. 'dQw4w9WgXcQ'.
+      latestVideoId: 'sJRYiSqlCbQ',
       tone: 'red',
     },
     {
@@ -70,7 +70,7 @@ export const site = {
       body: 'Sydney travel and lifestyle — the places, food and weekends worth sharing.',
       href: 'https://www.youtube.com/@ausi_desi',
       channelId: 'UCoO7s4GZbuNwiaGHJczQpGw',
-      latestVideoId: '',
+      latestVideoId: 'MSj2HcdWnns',
       tone: 'blue',
     },
   ],

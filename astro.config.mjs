@@ -8,5 +8,6 @@ export default defineConfig({
   site: 'https://amit-site.amit-site.workers.dev',
 
   output: 'static',
-  adapter: cloudflare(),
+  // Prerender in Node so the build can read .env/CI env vars and write src/data/latest-videos.json.
+  adapter: cloudflare({ prerenderEnvironment: 'node' }),
 });
