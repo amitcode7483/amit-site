@@ -9,8 +9,9 @@
 //    (the 5th brick topples the tower)
 //  - Idle ~12s with a mouse: falls asleep (Zzz); moving wakes him
 //  - Type "bit" anywhere: he dances
-//  - Play enough and an egg drops, wobbles and hatches Bitty, a baby brick who copies his dad
-//    (remembered per visitor in localStorage)
+//  - Play enough and an egg drops, wobbles and hatches Bitty, a baby brick who copies his dad.
+//    He's remembered per visitor in localStorage for BABY_LIFETIME, then waves bye and leaves
+//    (the entry is cleared, so a new egg can hatch).
 //  - Type "flash" anywhere: a 1999-style Flash intro loader (with SKIP INTRO), then Bit pops out
 //  - Moods: tickle him (wiggle over him) and he giggles; click too fast and he gets grumpy;
 //    every so often he drifts into a mood by himself (happy, bored)
@@ -368,6 +369,15 @@ const plateStuds = Array.from({ length: 13 }, (_, i) => 20 + i * 41);
   @keyframes b-dance { 15%, 45% { transform: translateY(-18px) rotate(10deg); } 30%, 60% { transform: rotate(-10deg); } }
   [data-mood="giggle"] .baby-all { animation: m-giggle .12s ease-in-out infinite alternate; }
   .is-asleep .baby-head { transform: translateY(4px) rotate(-6deg); }
+  .baby-leaving .baby-all { animation: b-leave 1.9s ease-in forwards; }
+  @keyframes b-leave {
+    0% { transform: none; opacity: 1; }
+    15% { transform: translateY(-14px) rotate(-6deg); }
+    30% { transform: translateY(0) rotate(6deg); }
+    45% { transform: translateY(-14px) rotate(-6deg); }
+    60% { transform: translate(10px, 0); opacity: 1; }
+    100% { transform: translate(140px, 0); opacity: 0; }
+  }
   .b-peep, .b-worry { font-family: var(--display); font-weight: 900; text-anchor: middle; opacity: 0; transition: opacity .15s; }
   .b-peep { font-size: 20px; fill: var(--ink); }
   .b-worry { font-size: 34px; fill: var(--red); }
@@ -439,6 +449,7 @@ const plateStuds = Array.from({ length: 13 }, (_, i) => 20 + i * 41);
     const label = $<HTMLElement>('[data-label]');
     const moodLabel = $<HTMLElement>('[data-mood-label]');
     const babyPupils = $<SVGGElement>('[data-baby-pupils]');
+    const peepText = $<SVGTextElement>('.b-peep');
     const flashEgg = $<HTMLElement>('[data-flash]');
     const flashBar = $<HTMLElement>('[data-flash-bar]');
     const flashPct = $<HTMLElement>('[data-flash-pct]');
@@ -501,10 +512,13 @@ const plateStuds = Array.from({ length: 13 }, (_, i) => 20 + i * 41);
     let hatched = false;
     let egging = false;
     const HATCH_AT = 12;
+    const BABY_LIFETIME = 30 * 60 * 1000;  // how long Bitty sticks around after hatching (ms)
+    let leaveTimer = 0;
     const PROUD = ['That’s my kid.', 'He gets his looks from me.', 'Careful, he’s still in beta.', 'Future senior engineer.', 'He already knows Git. Mostly.'];
     const store = {
       get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } },
       set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } },
+      remove: (k: string) => { try { localStorage.removeItem(k); } catch { /* private mode */ } },
     };
 
     // ---- helpers ----
@@ -594,14 +608,16 @@ const plateStuds = Array.from({ length: 13 }, (_, i) => 20 + i * 41);
       window.setTimeout(() => say('Wait… what’s that?', 1800), 500);
       window.setTimeout(() => root!.classList.add('egg-wobble'), 1900);
       window.setTimeout(() => root!.classList.add('egg-crack'), 2800);
-      window.setTimeout(hatch, 3700);
+      window.setTimeout(() => hatch(), 3700);
     }
-    function hatch(quiet = false) {
+    function hatch(quiet = false, bornAt = Date.now()) {
       hatched = true;
       egging = false;
-      root!.classList.remove('egg-in', 'egg-wobble', 'egg-crack');
+      root!.classList.remove('egg-in', 'egg-wobble', 'egg-crack', 'baby-leaving');
       root!.classList.add('has-baby');
-      store.set('bit-baby', '1');
+      store.set('bit-baby', String(bornAt));
+      clearTimeout(leaveTimer);
+      leaveTimer = window.setTimeout(leave, Math.max(0, bornAt + BABY_LIFETIME - Date.now()));
       if (quiet) return;
       flash('baby-pop', 620);
       window.setTimeout(peep, 300);
@@ -609,9 +625,31 @@ const plateStuds = Array.from({ length: 13 }, (_, i) => 20 + i * 41);
       flash('is-dance', 1320);
       say('It’s a baby brick! Meet Bitty.', 3200);
     }
-    if (store.get('bit-baby') === '1') {
-      hatch(true);
-      window.setTimeout(() => { if (visible && !asleep) { peep(); say('Bitty missed you!', 2400); } }, 1600);
+    function leave() {
+      if (!hatched) return;
+      const gone = () => {
+        root!.classList.remove('has-baby', 'baby-leaving', 'peeping');
+        peepText.textContent = 'peep!';
+        hatched = false;
+        play = 0;
+        store.remove('bit-baby');
+      };
+      if (!visible || document.hidden || reduced) { gone(); return; }
+      peepText.textContent = 'bye!';
+      root!.classList.add('peeping', 'baby-leaving');
+      say('They grow up so fast.', 2600);
+      window.setTimeout(gone, 1900);
+    }
+
+    // Returning visitor: Bitty is back if he's still within his lifetime; otherwise clear him out
+    {
+      const bornAt = Number(store.get('bit-baby'));
+      if (bornAt > 1e12 && Date.now() - bornAt < BABY_LIFETIME) {
+        hatch(true, bornAt);
+        window.setTimeout(() => { if (visible && !asleep && hatched) { peep(); say('Bitty missed you!', 2400); } }, 1600);
+      } else if (store.get('bit-baby') !== null) {
+        store.remove('bit-baby'); // expired, or saved by an older version
+      }
     }
 
     // ---- input ----

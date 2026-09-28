@@ -1,0 +1,427 @@
+---
+// "Build something" — a little brick playground, collapsed to a teaser card until opened.
+// Pick a colour and size, click the baseplate. Bricks stack from the bottom and never overlap.
+// Remove mode (or right-click), undo, clear, starter builds, save as PNG.
+// The build is remembered per visitor in localStorage.
+const COLOURS = [
+  { name: 'Red', hex: '#D01012' },
+  { name: 'Orange', hex: '#F57F20' },
+  { name: 'Yellow', hex: '#F7C600' },
+  { name: 'Green', hex: '#237841' },
+  { name: 'Blue', hex: '#0055BF' },
+  { name: 'White', hex: '#F4F4F4' },
+  { name: 'Brown', hex: '#7A4A2A' },
+  { name: 'Black', hex: '#2B2B2B' },
+];
+const SIZES = [1, 2, 3, 4];
+---
+<section class="block" id="build" aria-labelledby="build-title">
+  <div class="block-head">
+    <h2 id="build-title">Build something.</h2>
+    <span class="step mono"><b>4</b>Playground</span>
+  </div>
+
+  <div class="bb-teaser brick c-yellow" data-bb-teaser>
+    <div class="bb-teaser-copy">
+      <p class="bb-teaser-title">A tiny brick playground.</p>
+      <p class="bb-teaser-sub" data-bb-teaser-sub>Stack bricks, try a starter build, save your creation as a PNG.</p>
+    </div>
+    <svg class="bb-teaser-art" viewBox="0 0 200 84" aria-hidden="true">
+      <rect x="0" y="74" width="200" height="10" rx="3" fill="#237841" />
+      <g><rect x="30" y="50" width="60" height="24" rx="3" fill="#D01012" /><rect x="36" y="45" width="12" height="6" rx="2" fill="#E8383A" /><rect x="54" y="45" width="12" height="6" rx="2" fill="#E8383A" /><rect x="72" y="45" width="12" height="6" rx="2" fill="#E8383A" /></g>
+      <g><rect x="90" y="50" width="40" height="24" rx="3" fill="#0055BF" /><rect x="96" y="45" width="12" height="6" rx="2" fill="#1E6FD9" /><rect x="112" y="45" width="12" height="6" rx="2" fill="#1E6FD9" /></g>
+      <g><rect x="50" y="26" width="60" height="24" rx="3" fill="#237841" /><rect x="56" y="21" width="12" height="6" rx="2" fill="#2E9152" /><rect x="74" y="21" width="12" height="6" rx="2" fill="#2E9152" /><rect x="92" y="21" width="12" height="6" rx="2" fill="#2E9152" /></g>
+      <g class="bb-teaser-drop"><rect x="140" y="50" width="40" height="24" rx="3" fill="#F57F20" /><rect x="146" y="45" width="12" height="6" rx="2" fill="#F89A4A" /><rect x="162" y="45" width="12" height="6" rx="2" fill="#F89A4A" /></g>
+    </svg>
+    <button type="button" class="btn brick c-black bb-open" data-bb-toggle aria-expanded="false" aria-controls="bb-panel">
+      Open the playground ▸
+    </button>
+  </div>
+
+  <div class="bb" data-bb id="bb-panel" hidden>
+    <div class="bb-bar">
+      <div class="bb-group" role="radiogroup" aria-label="Brick colour">
+        {COLOURS.map((c, i) => (
+          <button type="button" class="bb-swatch" role="radio" aria-checked={i === 0 ? 'true' : 'false'}
+            aria-label={c.name} data-colour={c.hex} style={`--c:${c.hex}`}></button>
+        ))}
+      </div>
+      <div class="bb-group" role="radiogroup" aria-label="Brick size">
+        {SIZES.map((s, i) => (
+          <button type="button" class="bb-size" role="radio" aria-checked={i === 1 ? 'true' : 'false'}
+            aria-label={`1 by ${s}`} data-size={s}>
+            <span class="bb-mini" style={`--w:${s}`}></span>
+            <span class="mono">1×{s}</span>
+          </button>
+        ))}
+      </div>
+      <div class="bb-group">
+        <button type="button" class="bb-tool" data-tool="remove" aria-pressed="false">Remove</button>
+        <button type="button" class="bb-tool" data-act="undo">Undo</button>
+        <button type="button" class="bb-tool" data-act="clear">Clear</button>
+      </div>
+    </div>
+
+    <div class="bb-stage">
+      <svg class="bb-svg" data-svg viewBox="0 0 960 560" role="img" aria-label="Baseplate. Click to place a brick.">
+        <g data-bricks></g>
+        <g data-ghost class="bb-ghost"></g>
+        <g class="bb-plate">
+          <rect x="0" y="524" width="960" height="36" rx="6" fill="#237841" />
+          <rect x="0" y="550" width="960" height="10" rx="4" fill="rgba(0,0,0,.18)" />
+        </g>
+      </svg>
+    </div>
+
+    <div class="bb-foot">
+      <div class="bb-group">
+        <span class="mono bb-label">Starters</span>
+        <button type="button" class="bb-tool" data-template="house">House</button>
+        <button type="button" class="bb-tool" data-template="rocket">Rocket</button>
+        <button type="button" class="bb-tool" data-template="tree">Tree</button>
+      </div>
+      <p class="bb-status" data-status aria-live="polite">Pick a colour, pick a size, click the baseplate.</p>
+      <div class="bb-group">
+        <button type="button" class="bb-tool" data-bb-close>Close ▴</button>
+        <button type="button" class="btn brick c-yellow bb-save" data-act="save">Save as PNG ↓</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .bb-teaser { display: flex; align-items: center; gap: 28px; padding: 26px 30px 32px; flex-wrap: wrap; }
+  .bb-teaser-copy { flex: 1 1 260px; }
+  .bb-teaser-title { margin: 0; font-family: var(--display); font-weight: 900; font-size: 26px; letter-spacing: -.02em; }
+  .bb-teaser-sub { margin: 6px 0 0; font-size: 16px; font-weight: 600; opacity: .85; }
+  .bb-teaser-art { width: 180px; height: auto; flex: 0 0 auto; }
+  .bb-teaser-drop { animation: bb-tease 2.6s ease-in-out infinite; }
+  @keyframes bb-tease { 0%, 20% { transform: translateY(-30px); opacity: 0; } 35%, 85% { transform: none; opacity: 1; } 100% { opacity: 0; } }
+  .bb-open { flex: 0 0 auto; }
+  .bb-teaser[hidden], .bb[hidden] { display: none; }
+  .bb.is-opening { animation: bb-open .28s ease-out; }
+  @keyframes bb-open { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+
+  .bb { background: var(--white); border-radius: 10px; padding: 20px; box-shadow: inset 0 -7px 0 rgba(0,0,0,.06), 0 3px 0 rgba(0,0,0,.08); }
+  .bb-bar, .bb-foot { display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: center; justify-content: space-between; }
+  .bb-foot { margin-top: 16px; }
+  .bb-group { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .bb-label { color: var(--muted); margin-right: 4px; }
+
+  .bb-swatch {
+    width: 36px; height: 36px; border-radius: 6px; border: 0; cursor: pointer; background: var(--c);
+    box-shadow: inset 0 -4px 0 rgba(0,0,0,.22), 0 0 0 1px rgba(0,0,0,.12);
+    transition: transform .12s ease;
+  }
+  .bb-swatch[aria-checked="true"] { transform: translateY(-3px); box-shadow: inset 0 -4px 0 rgba(0,0,0,.22), 0 0 0 3px var(--ink); }
+
+  .bb-size, .bb-tool {
+    display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 12px; border-radius: 6px;
+    border: 0; background: #EFEBE3; color: var(--ink); font: 700 14px var(--display); cursor: pointer;
+    box-shadow: inset 0 -3px 0 rgba(0,0,0,.1);
+  }
+  .bb-size .mono { font-size: 12px; letter-spacing: .04em; }
+  .bb-size[aria-checked="true"], .bb-tool[aria-pressed="true"] { background: var(--ink); color: var(--white); }
+  .bb-tool:hover, .bb-size:hover { filter: brightness(.96); }
+  .bb-mini { width: calc(var(--w) * 10px); height: 12px; border-radius: 2px; background: currentColor; opacity: .85; }
+
+  .bb-stage { margin-top: 16px; border-radius: 8px; overflow: hidden; background: #EAF3FB;
+    background-image: linear-gradient(180deg, #DCEBF8, #F4F8FC); }
+  .bb-svg { display: block; width: 100%; max-width: 900px; margin: 0 auto; height: auto; cursor: crosshair; touch-action: manipulation; user-select: none; }
+  .bb.is-remove .bb-svg { cursor: not-allowed; }
+  .bb-ghost { opacity: .45; pointer-events: none; }
+  .bb.is-remove .bb-ghost { display: none; }
+  :global(.bb-brick) { transition: opacity .12s; }
+  .bb.is-remove :global(.bb-brick:hover) { opacity: .45; }
+  :global(.bb-drop) { animation: bb-drop .22s cubic-bezier(.3,1.4,.5,1); transform-box: fill-box; }
+  @keyframes bb-drop { from { transform: translateY(-40px); opacity: 0; } to { transform: none; opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { :global(.bb-drop), .bb-teaser-drop, .bb.is-opening { animation: none; } }
+
+  .bb-status { margin: 0; flex: 1 1 220px; font-weight: 600; color: var(--muted); text-align: center; }
+  .bb-save { margin-top: 0; }
+
+  @media (max-width: 760px) {
+    .bb { padding: 14px; }
+    .bb-swatch { width: 32px; height: 32px; }
+    .bb-status { order: 3; flex-basis: 100%; }
+    .bb-teaser { padding: 22px 20px 28px; gap: 18px; }
+    .bb-teaser-art { width: 140px; }
+  }
+</style>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-bb]');
+  if (root) {
+    const $ = <T extends Element>(s: string) => root.querySelector<T>(s)!;
+    const svg = $<SVGSVGElement>('[data-svg]');
+    const layer = $<SVGGElement>('[data-bricks]');
+    const ghost = $<SVGGElement>('[data-ghost]');
+    const status = $<HTMLElement>('[data-status]');
+    const NS = 'http://www.w3.org/2000/svg';
+
+    const COLS = 24, ROWS = 10;
+    const CW = 40, RH = 48, PLATE = 524; // cell width, row height, top of baseplate
+    type Brick = { x: number; y: number; w: number; c: string };
+
+    const R = '#D01012', O = '#F57F20', Y = '#F7C600', G = '#237841', B = '#0055BF', W = '#F4F4F4', N = '#7A4A2A';
+    const TEMPLATES: Record<string, [number, number, number, string][]> = {
+      house: [
+        [8,0,4,R],[12,0,4,R],
+        [8,1,2,R],[10,1,1,W],[11,1,2,R],[13,1,1,W],[14,1,2,R],
+        [8,2,2,R],[10,2,1,W],[11,2,2,R],[13,2,1,W],[14,2,2,R],
+        [8,3,4,R],[12,3,4,R],
+        [7,4,4,B],[11,4,4,B],[15,4,2,B],
+        [8,5,4,B],[12,5,4,B],
+        [9,6,3,B],[12,6,3,B],
+        [10,7,4,B],
+        [11,8,2,B],
+      ],
+      rocket: [
+        [8,0,2,R],[10,0,4,W],[14,0,2,R],
+        [9,1,1,R],[10,1,4,W],[14,1,1,R],
+        [10,2,4,W],
+        [10,3,1,W],[11,3,2,B],[13,3,1,W],
+        [10,4,4,W],
+        [10,5,4,R],
+        [11,6,2,R],
+        [11,7,2,O],
+      ],
+      tree: [
+        [11,0,2,N],[11,1,2,N],
+        [8,2,4,G],[12,2,4,G],
+        [9,3,3,G],[12,3,3,G],
+        [10,4,4,G],
+        [11,5,2,G],
+        [11,6,2,Y],
+      ],
+    };
+
+    let bricks: Brick[] = [];
+    let history: Brick[][] = [];
+    let colour = '#D01012';
+    let size = 2;
+    let removing = false;
+    let placedTotal = 0;
+
+    const store = {
+      get() { try { return JSON.parse(localStorage.getItem('brick-build') || 'null'); } catch { return null; } },
+      set(v: Brick[]) { try { localStorage.setItem('brick-build', JSON.stringify(v)); } catch { /* private mode */ } },
+    };
+
+    // ---------- geometry ----------
+    const topOf = (y: number) => PLATE - (y + 1) * RH;
+    function landingRow(x: number, w: number) {
+      let row = 0;
+      for (const b of bricks) {
+        if (b.x < x + w && x < b.x + b.w) row = Math.max(row, b.y + 1);
+      }
+      return row;
+    }
+    function toSvg(e: PointerEvent | MouseEvent) {
+      const r = svg.getBoundingClientRect();
+      return { x: (e.clientX - r.left) * (960 / r.width), y: (e.clientY - r.top) * (560 / r.height) };
+    }
+    function colFor(px: number, w: number) {
+      return Math.max(0, Math.min(COLS - w, Math.round(px / CW - w / 2)));
+    }
+    function shade(hex: string, amt: number) {
+      const n = parseInt(hex.slice(1), 16);
+      const f = (c: number) => Math.max(0, Math.min(255, Math.round(c + amt)));
+      return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`;
+    }
+
+    // ---------- drawing ----------
+    function rect(g: SVGGElement, x: number, y: number, w: number, h: number, rx: number, fill: string) {
+      const r = document.createElementNS(NS, 'rect');
+      r.setAttribute('x', String(x)); r.setAttribute('y', String(y));
+      r.setAttribute('width', String(w)); r.setAttribute('height', String(h));
+      r.setAttribute('rx', String(rx)); r.setAttribute('fill', fill);
+      g.appendChild(r);
+    }
+    function drawBrick(parent: SVGGElement, b: Brick, idx: number | null, drop = false) {
+      const g = document.createElementNS(NS, 'g');
+      g.setAttribute('class', 'bb-brick' + (drop ? ' bb-drop' : ''));
+      if (idx !== null) g.dataset.i = String(idx);
+      const x = b.x * CW, y = topOf(b.y), w = b.w * CW;
+      for (let i = 0; i < b.w; i++) {
+        rect(g, x + i * CW + 9, y - 9, 22, 11, 3, shade(b.c, 18));   // stud
+        rect(g, x + i * CW + 12, y - 7, 7, 3, 1.5, 'rgba(255,255,255,.45)'); // glare
+      }
+      rect(g, x + 1, y, w - 2, RH, 5, b.c);
+      rect(g, x + 1, y + RH - 9, w - 2, 9, 4, 'rgba(0,0,0,.2)');
+      rect(g, x + 1, y, w - 2, 1, 0, 'rgba(0,0,0,.18)');
+      if (b.c === '#F4F4F4') g.setAttribute('stroke', 'rgba(0,0,0,.08)');
+      parent.appendChild(g);
+    }
+    function render(dropIndex = -1) {
+      layer.replaceChildren();
+      [...bricks].map((b, i) => ({ b, i })).sort((a, z) => a.b.y - z.b.y)
+        .forEach(({ b, i }) => drawBrick(layer, b, i, i === dropIndex));
+    }
+    function showGhost(e: PointerEvent) {
+      ghost.replaceChildren();
+      if (removing) return;
+      const p = toSvg(e);
+      const x = colFor(p.x, size);
+      const y = landingRow(x, size);
+      if (y >= ROWS) return;
+      drawBrick(ghost, { x, y, w: size, c: colour }, null);
+    }
+
+    // ---------- actions ----------
+    function commit(next: Brick[], dropIndex = -1) {
+      history.push(bricks);
+      if (history.length > 100) history.shift();
+      bricks = next;
+      store.set(bricks);
+      render(dropIndex);
+    }
+    function say(text: string) { status.textContent = text; }
+
+    function place(e: PointerEvent | MouseEvent) {
+      const p = toSvg(e);
+      const x = colFor(p.x, size);
+      const y = landingRow(x, size);
+      if (y >= ROWS) { say('That column is full. Try somewhere else.'); return; }
+      commit([...bricks, { x, y, w: size, c: colour }], bricks.length);
+      placedTotal++;
+      const n = bricks.length;
+      if (n === 1) say('First brick. Every system starts somewhere.');
+      else if (n === 10) say('10 bricks! Bit is impressed.');
+      else if (n === 25) say('25 bricks. That’s a proper build.');
+      else if (n === 50) say('50 bricks — that’s a whole sprint.');
+      else if (n === 100) say('100 bricks. Ship it.');
+      else if (placedTotal % 7 === 0) say(`${n} bricks and counting.`);
+    }
+    function removeAt(target: EventTarget | null) {
+      const g = (target as Element | null)?.closest?.('.bb-brick') as SVGGElement | null;
+      if (!g || g.dataset.i === undefined) return false;
+      const i = Number(g.dataset.i);
+      commit(bricks.filter((_, k) => k !== i));
+      say('Brick removed.');
+      return true;
+    }
+
+    svg.addEventListener('pointermove', showGhost);
+    svg.addEventListener('pointerleave', () => ghost.replaceChildren());
+    svg.addEventListener('click', (e) => {
+      if (removing) { removeAt(e.target); return; }
+      place(e);
+      ghost.replaceChildren();
+    });
+    svg.addEventListener('contextmenu', (e) => {
+      if (removeAt(e.target)) e.preventDefault();
+    });
+
+    // ---------- toolbar ----------
+    function pick(group: string, btn: HTMLElement) {
+      root!.querySelectorAll(group).forEach((b) => b.setAttribute('aria-checked', String(b === btn)));
+    }
+    root.querySelectorAll<HTMLButtonElement>('.bb-swatch').forEach((b) =>
+      b.addEventListener('click', () => { colour = b.dataset.colour!; pick('.bb-swatch', b); setRemove(false); }));
+    root.querySelectorAll<HTMLButtonElement>('.bb-size').forEach((b) =>
+      b.addEventListener('click', () => { size = Number(b.dataset.size); pick('.bb-size', b); setRemove(false); }));
+
+    const removeBtn = $<HTMLButtonElement>('[data-tool="remove"]');
+    function setRemove(on: boolean) {
+      removing = on;
+      removeBtn.setAttribute('aria-pressed', String(on));
+      root!.classList.toggle('is-remove', on);
+      if (on) { ghost.replaceChildren(); say('Remove mode: click a brick to take it off.'); }
+    }
+    removeBtn.addEventListener('click', () => setRemove(!removing));
+
+    $('[data-act="undo"]').addEventListener('click', () => {
+      const prev = history.pop();
+      if (!prev) { say('Nothing to undo.'); return; }
+      bricks = prev; store.set(bricks); render(); say('Undone.');
+    });
+    $('[data-act="clear"]').addEventListener('click', () => {
+      if (!bricks.length) return;
+      commit([]); say('Fresh baseplate. Undo if that was a mistake.');
+    });
+    root.querySelectorAll<HTMLButtonElement>('[data-template]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const t = TEMPLATES[b.dataset.template!];
+        commit(t.map(([x, y, w, c]) => ({ x, y, w, c })));
+        setRemove(false);
+        say(`A ${b.textContent!.toLowerCase()}! Now make it yours.`);
+      }));
+
+    // ---------- save as PNG ----------
+    $('[data-act="save"]').addEventListener('click', () => {
+      const clone = svg.cloneNode(true) as SVGSVGElement;
+      clone.querySelector('[data-ghost]')?.replaceChildren();
+      clone.setAttribute('xmlns', NS);
+      clone.setAttribute('width', '1920'); clone.setAttribute('height', '1120');
+      const sky = document.createElementNS(NS, 'rect');
+      sky.setAttribute('width', '960'); sky.setAttribute('height', '560'); sky.setAttribute('fill', '#E6F0FA');
+      clone.insertBefore(sky, clone.firstChild);
+      const credit = document.createElementNS(NS, 'text');
+      credit.setAttribute('x', '948'); credit.setAttribute('y', '546'); credit.setAttribute('text-anchor', 'end');
+      credit.setAttribute('fill', 'rgba(255,255,255,.85)'); credit.setAttribute('font-size', '14');
+      credit.setAttribute('font-family', 'monospace'); credit.textContent = 'built at amitcode.dev';
+      clone.appendChild(credit);
+      const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(clone)], { type: 'image/svg+xml' }));
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement('canvas');
+        c.width = 1920; c.height = 1120;
+        c.getContext('2d')!.drawImage(img, 0, 0, 1920, 1120);
+        URL.revokeObjectURL(url);
+        c.toBlob((blob) => {
+          if (!blob) return;
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'my-brick-build.png';
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+          say('Saved! Share it and tag me.');
+        }, 'image/png');
+      };
+      img.src = url;
+    });
+
+    // ---------- open / close ----------
+    const teaser = document.querySelector<HTMLElement>('[data-bb-teaser]')!;
+    const teaserSub = document.querySelector<HTMLElement>('[data-bb-teaser-sub]')!;
+    const openBtn = document.querySelector<HTMLButtonElement>('[data-bb-toggle]')!;
+    function refreshTeaser() {
+      teaserSub.textContent = bricks.length
+        ? `Your build is waiting (${bricks.length} brick${bricks.length === 1 ? '' : 's'}).`
+        : 'Stack bricks, try a starter build, save your creation as a PNG.';
+    }
+    function open(scroll = false) {
+      if (!root!.hidden) return;
+      teaser.hidden = true;
+      root!.hidden = false;
+      openBtn.setAttribute('aria-expanded', 'true');
+      root!.classList.remove('is-opening'); void root!.offsetWidth; root!.classList.add('is-opening');
+      if (scroll) document.getElementById('build')?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      root!.querySelector<HTMLButtonElement>('.bb-swatch[aria-checked="true"]')?.focus({ preventScroll: true });
+    }
+    function close() {
+      root!.hidden = true;
+      teaser.hidden = false;
+      openBtn.setAttribute('aria-expanded', 'false');
+      refreshTeaser();
+      openBtn.focus({ preventScroll: true });
+      document.getElementById('build')?.scrollIntoView({ block: 'start' });
+    }
+    openBtn.addEventListener('click', () => open());
+    $('[data-bb-close]').addEventListener('click', close);
+    // Menu links to #build open it too
+    document.querySelectorAll<HTMLAnchorElement>('a[href="#build"]').forEach((a) =>
+      a.addEventListener('click', (e) => { e.preventDefault(); window.history.replaceState(null, '', '#build'); open(true); }));
+    if (location.hash === '#build') open();
+
+    // ---------- start ----------
+    const saved = store.get();
+    if (Array.isArray(saved) && saved.length) {
+      bricks = saved.filter((b: Brick) => Number.isFinite(b.x) && Number.isFinite(b.y) && b.w >= 1 && b.w <= 4 && /^#[0-9a-f]{6}$/i.test(b.c));
+      say('Welcome back — your build is right where you left it.');
+    }
+    render();
+    refreshTeaser();
+  }
+</script>
