@@ -9,11 +9,13 @@
 //    (the 5th brick topples the tower)
 //  - Idle ~12s with a mouse: falls asleep (Zzz); moving wakes him
 //  - Type "bit" anywhere: he dances
+//  - Play enough and an egg drops, wobbles and hatches Bitty, a baby brick who copies his dad
+//    (remembered per visitor in localStorage)
 //  - Type "flash" anywhere: a 1999-style Flash intro loader (with SKIP INTRO), then Bit pops out
 //  - Moods: tickle him (wiggle over him) and he giggles; click too fast and he gets grumpy;
 //    every so often he drifts into a mood by himself (happy, bored)
 const headStuds = [153, 223, 293, 363];
-const plateStuds = Array.from({ length: 11 }, (_, i) => 62 + i * 42);
+const plateStuds = Array.from({ length: 13 }, (_, i) => 20 + i * 41);
 ---
 <div class="mascot" data-mascot>
   <div class="m-bubble" data-bubble role="status" aria-live="polite"></div>
@@ -22,8 +24,8 @@ const plateStuds = Array.from({ length: 11 }, (_, i) => 62 + i * 42);
     <svg viewBox="0 0 560 560" aria-hidden="true" focusable="false">
       <!-- baseplate -->
       {plateStuds.map((x) => <rect class="stud s-green" x={x} y="488" width="26" height="14" rx="3" />)}
-      <rect class="b-green" x="40" y="498" width="480" height="40" rx="6" />
-      <rect class="shade" x="40" y="528" width="480" height="10" rx="4" />
+      <rect class="b-green" x="10" y="498" width="540" height="40" rx="6" />
+      <rect class="shade" x="10" y="528" width="540" height="10" rx="4" />
 
       <g class="m-all">
         <!-- feet -->
@@ -110,6 +112,48 @@ const plateStuds = Array.from({ length: 11 }, (_, i) => 62 + i * 42);
           <text x="440" y="120">z</text>
           <text x="470" y="80">z</text>
           <text x="505" y="36">Z</text>
+        </g>
+      </g>
+
+      <!-- the egg -->
+      <g class="egg" data-egg>
+        <g class="egg-shell">
+          <rect x="498" y="414" width="12" height="9" rx="3" fill="#FFF6E0" stroke="rgba(0,0,0,.15)" stroke-width="2" />
+          <rect x="514" y="414" width="12" height="9" rx="3" fill="#FFF6E0" stroke="rgba(0,0,0,.15)" stroke-width="2" />
+          <ellipse cx="512" cy="460" rx="30" ry="38" fill="#FFF6E0" stroke="rgba(0,0,0,.15)" stroke-width="2" />
+          <circle cx="498" cy="448" r="5" fill="#D01012" />
+          <circle cx="524" cy="468" r="6" fill="#0055BF" />
+          <circle cx="508" cy="482" r="4" fill="#237841" />
+          <circle cx="527" cy="440" r="3.5" fill="#F57F20" />
+          <path class="crack" d="M484 456 L494 447 L503 459 L513 446 L522 459 L531 448 L540 456" />
+        </g>
+      </g>
+
+      <!-- Bitty -->
+      <g class="baby" data-baby>
+        <g class="baby-all">
+          <rect class="b-orange" x="494" y="482" width="14" height="16" rx="3" />
+          <rect class="b-orange" x="516" y="482" width="14" height="16" rx="3" />
+          <rect class="b-red" x="478" y="452" width="12" height="24" rx="4" />
+          <rect class="b-red" x="534" y="452" width="12" height="24" rx="4" />
+          <rect class="b-green" x="488" y="446" width="48" height="40" rx="6" />
+          <rect class="belly" x="498" y="454" width="28" height="24" rx="4" />
+          <g class="baby-head">
+            <rect class="stud s-yellow" x="494" y="396" width="14" height="10" rx="3" />
+            <rect class="stud s-yellow" x="516" y="396" width="14" height="10" rx="3" />
+            <rect class="b-yellow" x="480" y="404" width="64" height="46" rx="8" />
+            <rect class="eye" x="487" y="415" width="21" height="21" rx="5" />
+            <rect class="eye" x="516" y="415" width="21" height="21" rx="5" />
+            <g data-baby-pupils>
+              <rect class="pupil b-pupil-l" x="493" y="421" width="9" height="9" rx="2" />
+              <rect class="pupil b-pupil-r" x="522" y="421" width="9" height="9" rx="2" />
+            </g>
+            <rect class="b-yellow blid" x="486" y="414" width="23" height="23" />
+            <rect class="b-yellow blid" x="515" y="414" width="23" height="23" />
+            <rect class="b-orange" x="505" y="437" width="14" height="9" rx="3" />
+          </g>
+          <text class="b-peep" x="512" y="386">peep!</text>
+          <text class="b-worry" x="512" y="386">!</text>
         </g>
       </g>
     </svg>
@@ -300,6 +344,36 @@ const plateStuds = Array.from({ length: 11 }, (_, i) => 62 + i * 42);
   [data-mood="bored"] .m-mood i { background: #A8A39A; }
   .is-asleep .m-mood i { background: var(--blue); }
 
+  /* ---------- Egg + Bitty ---------- */
+  .egg, .baby { visibility: hidden; }
+  .egg-in .egg { visibility: visible; }
+  .has-baby .baby { visibility: visible; }
+  .egg-shell { transform-box: fill-box; transform-origin: 50% 100%; }
+  .egg-in .egg-shell { animation: egg-drop .5s cubic-bezier(.3,1.5,.5,1); }
+  .egg-wobble .egg-shell { animation: egg-wobble .16s ease-in-out infinite alternate; }
+  @keyframes egg-drop { from { transform: translateY(-220px); } to { transform: none; } }
+  @keyframes egg-wobble { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
+  .crack { fill: none; stroke: var(--ink); stroke-width: 3; stroke-linejoin: round; opacity: 0; }
+  .egg-crack .crack { opacity: 1; }
+  .baby-all { transform-box: view-box; transform-origin: 512px 498px; }
+  .baby-pop .baby-all { animation: b-pop .6s cubic-bezier(.3,1.6,.5,1); }
+  @keyframes b-pop { from { transform: scale(0) translateY(20px); } to { transform: none; } }
+  .baby-head { transform-box: view-box; transform-origin: 512px 450px; transition: transform .2s ease; }
+  .blid { transform-box: fill-box; transform-origin: 50% 0; transform: scaleY(0); transition: transform 80ms ease-in 60ms; }
+  .is-blinking .blid, .is-asleep .blid { transform: scaleY(1); }
+  /* copy dad */
+  .is-hop .baby-all, .baby-hop .baby-all { animation: b-hop .45s cubic-bezier(.3,.7,.4,1) .1s; }
+  @keyframes b-hop { 50% { transform: translateY(-26px); } }
+  .is-dance .baby-all { animation: b-dance 1.3s ease-in-out .15s; }
+  @keyframes b-dance { 15%, 45% { transform: translateY(-18px) rotate(10deg); } 30%, 60% { transform: rotate(-10deg); } }
+  [data-mood="giggle"] .baby-all { animation: m-giggle .12s ease-in-out infinite alternate; }
+  .is-asleep .baby-head { transform: translateY(4px) rotate(-6deg); }
+  .b-peep, .b-worry { font-family: var(--display); font-weight: 900; text-anchor: middle; opacity: 0; transition: opacity .15s; }
+  .b-peep { font-size: 20px; fill: var(--ink); }
+  .b-worry { font-size: 34px; fill: var(--red); }
+  .peeping .b-peep { opacity: 1; }
+  [data-mood="grumpy"] .has-baby .b-worry, .has-baby[data-mood="grumpy"] .b-worry { opacity: 1; }
+
   /* ---------- "flash" easter egg ---------- */
   .flash-egg {
     position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 16px;
@@ -341,6 +415,7 @@ const plateStuds = Array.from({ length: 11 }, (_, i) => 62 + i * 42);
     .is-hop .m-all, .is-dance .m-all, .is-asleep .m-all, .is-hop .wing-l, .is-hop .wing-r, .is-dance .wing-l, .is-dance .wing-r { animation: none; }
     .is-asleep .zzz text { animation: none; opacity: 1; }
     :global(.hat-brick) { animation: none; }
+    .egg-in .egg-shell, .egg-wobble .egg-shell, .baby-pop .baby-all, .is-hop .baby-all, .baby-hop .baby-all, .is-dance .baby-all, [data-mood="giggle"] .baby-all { animation: none; }
   }
   @media (max-width: 720px) {
     .m-track { width: 120px; }
@@ -363,6 +438,7 @@ const plateStuds = Array.from({ length: 11 }, (_, i) => 62 + i * 42);
     const dot = $<HTMLElement>('[data-dot]');
     const label = $<HTMLElement>('[data-label]');
     const moodLabel = $<HTMLElement>('[data-mood-label]');
+    const babyPupils = $<SVGGElement>('[data-baby-pupils]');
     const flashEgg = $<HTMLElement>('[data-flash]');
     const flashBar = $<HTMLElement>('[data-flash-bar]');
     const flashPct = $<HTMLElement>('[data-flash-pct]');
@@ -421,6 +497,15 @@ const plateStuds = Array.from({ length: 11 }, (_, i) => 62 + i * 42);
     let flips: number[] = [];    // tickle: timestamps of direction changes
     let nextDrift = performance.now() + 20000;
     let lastT = performance.now();
+    let play = 0;                // how much the visitor has played; enough hatches the egg
+    let hatched = false;
+    let egging = false;
+    const HATCH_AT = 12;
+    const PROUD = ['That’s my kid.', 'He gets his looks from me.', 'Careful, he’s still in beta.', 'Future senior engineer.', 'He already knows Git. Mostly.'];
+    const store = {
+      get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } },
+      set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } },
+    };
 
     // ---- helpers ----
     function say(text: string, ms = 2200) {
@@ -494,6 +579,41 @@ const plateStuds = Array.from({ length: 11 }, (_, i) => 62 + i * 42);
       say(pick(QUIPS));
     }
 
+    // ---- Bitty ----
+    function peep() {
+      root!.classList.add('peeping');
+      window.setTimeout(() => root!.classList.remove('peeping'), 900);
+    }
+    function addPlay(n: number) {
+      play += n;
+      if (!hatched && !egging && play >= HATCH_AT) layEgg();
+    }
+    function layEgg() {
+      egging = true;
+      root!.classList.add('egg-in');
+      window.setTimeout(() => say('Wait… what’s that?', 1800), 500);
+      window.setTimeout(() => root!.classList.add('egg-wobble'), 1900);
+      window.setTimeout(() => root!.classList.add('egg-crack'), 2800);
+      window.setTimeout(hatch, 3700);
+    }
+    function hatch(quiet = false) {
+      hatched = true;
+      egging = false;
+      root!.classList.remove('egg-in', 'egg-wobble', 'egg-crack');
+      root!.classList.add('has-baby');
+      store.set('bit-baby', '1');
+      if (quiet) return;
+      flash('baby-pop', 620);
+      window.setTimeout(peep, 300);
+      wake(true);
+      flash('is-dance', 1320);
+      say('It’s a baby brick! Meet Bitty.', 3200);
+    }
+    if (store.get('bit-baby') === '1') {
+      hatch(true);
+      window.setTimeout(() => { if (visible && !asleep) { peep(); say('Bitty missed you!', 2400); } }, 1600);
+    }
+
     // ---- input ----
     addEventListener('pointermove', (e) => {
       const r = svg.getBoundingClientRect();
@@ -512,6 +632,7 @@ const plateStuds = Array.from({ length: 11 }, (_, i) => 62 + i * 42);
           flips = [];
           setMood('giggle', 2600, () => setMood('happy', 5000));
           say(pick(GIGGLES), 2400);
+          addPlay(3);
         }
       }
     }, { passive: true });
@@ -522,9 +643,15 @@ const plateStuds = Array.from({ length: 11 }, (_, i) => 62 + i * 42);
     hit.addEventListener('focus', () => root.classList.add('is-curious'));
     hit.addEventListener('blur', () => root.classList.remove('is-curious'));
 
-    hit.addEventListener('click', () => {
+    hit.addEventListener('click', (e) => {
       lastMove = performance.now();
       if (asleep) { wake(); return; }
+      if (hatched && (e.target as Element).closest?.('[data-baby]')) {
+        flash('baby-hop', 560);
+        peep();
+        say(pick(PROUD), 2000);
+        return;
+      }
       if (mood === 'grumpy') { say(pick(STILL_GRUMPY), 1600); return; }
       irritation += 1;
       if (irritation >= 5) {
@@ -536,6 +663,7 @@ const plateStuds = Array.from({ length: 11 }, (_, i) => 62 + i * 42);
       }
       flash('is-hop', 560);
       addHatBrick();
+      addPlay(1);
     });
 
     // Easter egg: type "bit"
@@ -551,6 +679,7 @@ const plateStuds = Array.from({ length: 11 }, (_, i) => 62 + i * 42);
         wake(true);
         flash('is-dance', 1320);
         say('You found me!', 2400);
+        addPlay(2);
       }
     });
 
@@ -587,6 +716,7 @@ const plateStuds = Array.from({ length: 11 }, (_, i) => 62 + i * 42);
         wake(true);
         flash('is-dance', 1320);
         say(skipped ? 'Everyone always skipped the intro.' : 'Flash is dead. Long live SVG.', 2800);
+        addPlay(2);
       }, 350);
     }
     flashSkip.addEventListener('click', () => endFlash(true));
@@ -660,6 +790,15 @@ const plateStuds = Array.from({ length: 11 }, (_, i) => 62 + i * 42);
 
       place(pupilL, EYE_L);
       place(pupilR, EYE_R);
+      if (hatched) {
+        // Bitty watches the cursor, or worriedly watches dad when he's grumpy
+        const bx = mood === 'grumpy' ? MID.x : cur.x;
+        const by = mood === 'grumpy' ? MID.y + 100 : cur.y;
+        const bdx = bx - 512, bdy = by - 426;
+        const bk = Math.min(1, Math.hypot(bdx, bdy) / 160);
+        const ba = Math.atan2(bdy, bdx);
+        babyPupils.style.transform = `translate(${Math.cos(ba) * 5 * bk}px, ${Math.sin(ba) * 5 * bk}px)`;
+      }
 
       const away = mood === 'grumpy' ? -1 : 1;
       const dx = asleep ? 0 : (cur.x - MID.x) * away;
