@@ -9,6 +9,7 @@
 //    (the 5th brick topples the tower)
 //  - Idle ~12s with a mouse: falls asleep (Zzz); moving wakes him
 //  - Type "bit" anywhere: he dances
+//  - Type "flash" anywhere: a 1999-style Flash intro loader (with SKIP INTRO), then Bit pops out
 //  - Moods: tickle him (wiggle over him) and he giggles; click too fast and he gets grumpy;
 //    every so often he drifts into a mood by himself (happy, bored)
 const headStuds = [153, 223, 293, 363];
@@ -120,6 +121,17 @@ const plateStuds = Array.from({ length: 11 }, (_, i) => 62 + i * 42);
     <span class="m-label" data-label>CENTRE</span>
   </div>
   <div class="m-mood" aria-hidden="true"><i></i>MOOD · <b data-mood-label>JUDGY</b></div>
+  <div class="flash-egg" data-flash hidden role="dialog" aria-modal="true" aria-label="Retro Flash intro">
+    <div class="fe-box">
+      <p class="fe-title">AMITCODE<span>.DEV</span></p>
+      <p class="fe-sub">interactive experience &middot; est. 1999</p>
+      <div class="fe-bar" aria-hidden="true"><span data-flash-bar></span></div>
+      <p class="fe-pct"><b data-flash-pct>0</b>% LOADING<span class="fe-dots">...</span></p>
+      <p class="fe-note">This site requires the Flash 5 plug-in.<br />Best viewed at 800&times;600 on a 56k modem.</p>
+      <button type="button" class="fe-skip" data-flash-skip>[ SKIP INTRO ]</button>
+    </div>
+  </div>
+
   <p class="m-hint">Poke him, tickle him (wiggle over him) — or annoy him.</p>
 </div>
 
@@ -288,7 +300,42 @@ const plateStuds = Array.from({ length: 11 }, (_, i) => 62 + i * 42);
   [data-mood="bored"] .m-mood i { background: #A8A39A; }
   .is-asleep .m-mood i { background: var(--blue); }
 
+  /* ---------- "flash" easter egg ---------- */
+  .flash-egg {
+    position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 16px;
+    background: #050505; color: #D8D8D8; font-family: var(--mono);
+    background-image: repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 3px);
+    transition: opacity .35s ease;
+  }
+  .flash-egg[hidden] { display: none; }
+  .flash-egg.out { opacity: 0; }
+  .fe-box { width: min(520px, 100%); text-align: center; }
+  .fe-title {
+    margin: 0; font-family: var(--display); font-weight: 900; font-size: clamp(36px, 8vw, 64px); letter-spacing: .04em;
+    background: linear-gradient(180deg, #FFFFFF 0%, #9A9A9A 48%, #F2F2F2 52%, #6E6E6E 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 12px rgba(120,180,255,.35));
+  }
+  .fe-title span { background: linear-gradient(180deg, #FFD36B, #F57F20); -webkit-background-clip: text; background-clip: text; }
+  .fe-sub { margin: 6px 0 34px; font-size: 12px; letter-spacing: .4em; text-transform: uppercase; color: #7FA7D8; }
+  .fe-bar { height: 18px; padding: 3px; border: 1px solid #5A5A5A; background: #111; }
+  .fe-bar span {
+    display: block; height: 100%; width: 0;
+    background: repeating-linear-gradient(90deg, #F57F20 0 14px, transparent 14px 18px);
+  }
+  .fe-pct { margin: 14px 0 0; font-size: 14px; letter-spacing: .2em; }
+  .fe-pct b { color: #FFD36B; font-weight: 500; }
+  .fe-dots { animation: fe-blink 1s steps(2) infinite; }
+  @keyframes fe-blink { 50% { opacity: 0; } }
+  .fe-note { margin: 28px 0 0; font-size: 12px; line-height: 1.8; color: #8C8C8C; }
+  .fe-skip {
+    margin-top: 26px; min-height: 44px; padding: 0 18px; border: 1px solid #8C8C8C; background: transparent; color: #D8D8D8;
+    font: inherit; font-size: 13px; letter-spacing: .2em; cursor: pointer;
+  }
+  .fe-skip:hover, .fe-skip:focus-visible { background: #D8D8D8; color: #050505; outline: none; }
+
   @media (prefers-reduced-motion: reduce) {
+    .fe-dots { animation: none; }
     [data-mood] .m-all, [data-mood="grumpy"] .steam circle { animation: none !important; }
     [data-mood="grumpy"] .steam circle { opacity: .6; }
     .is-hop .m-all, .is-dance .m-all, .is-asleep .m-all, .is-hop .wing-l, .is-hop .wing-r, .is-dance .wing-l, .is-dance .wing-r { animation: none; }
@@ -316,6 +363,10 @@ const plateStuds = Array.from({ length: 11 }, (_, i) => 62 + i * 42);
     const dot = $<HTMLElement>('[data-dot]');
     const label = $<HTMLElement>('[data-label]');
     const moodLabel = $<HTMLElement>('[data-mood-label]');
+    const flashEgg = $<HTMLElement>('[data-flash]');
+    const flashBar = $<HTMLElement>('[data-flash-bar]');
+    const flashPct = $<HTMLElement>('[data-flash-pct]');
+    const flashSkip = $<HTMLButtonElement>('[data-flash-skip]');
 
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const finePointer = matchMedia('(pointer: fine)').matches;
@@ -493,14 +544,53 @@ const plateStuds = Array.from({ length: 11 }, (_, i) => 62 + i * 42);
       const t = e.target as HTMLElement;
       if (e.metaKey || e.ctrlKey || e.altKey || t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
       if (e.key.length !== 1) return;
-      typed = (typed + e.key.toLowerCase()).slice(-3);
-      if (typed === 'bit') {
+      typed = (typed + e.key.toLowerCase()).slice(-5);
+      if (typed === 'flash') { typed = ''; runFlash(); return; }
+      if (typed.endsWith('bit')) {
         typed = '';
         wake(true);
         flash('is-dance', 1320);
         say('You found me!', 2400);
       }
     });
+
+    // ---- "flash": a 1999 intro loader, dial-up pacing included ----
+    let flashTimer = 0;
+    let flashReturnFocus: HTMLElement | null = null;
+    function runFlash() {
+      if (!flashEgg.hidden) return;
+      flashReturnFocus = document.activeElement as HTMLElement | null;
+      flashEgg.hidden = false;
+      flashEgg.classList.remove('out');
+      flashSkip.focus();
+      let pct = 0;
+      const tick = () => {
+        // Speedy start, crawl through the 90s, a long stall at 99%
+        pct += pct < 60 ? 7 + Math.random() * 9 : pct < 95 ? 2 + Math.random() * 4 : 1;
+        pct = Math.min(pct, 100);
+        flashBar.style.width = `${pct}%`;
+        flashPct.textContent = String(Math.floor(pct));
+        if (pct >= 100) { flashTimer = window.setTimeout(endFlash, 400); return; }
+        flashTimer = window.setTimeout(tick, pct >= 99 ? 900 : 110 + Math.random() * 160);
+      };
+      tick();
+    }
+    function endFlash(skipped = false) {
+      if (flashEgg.hidden) return;
+      clearTimeout(flashTimer);
+      flashEgg.classList.add('out');
+      window.setTimeout(() => {
+        flashEgg.hidden = true;
+        flashBar.style.width = '0';
+        flashPct.textContent = '0';
+        flashReturnFocus?.focus?.();
+        wake(true);
+        flash('is-dance', 1320);
+        say(skipped ? 'Everyone always skipped the intro.' : 'Flash is dead. Long live SVG.', 2800);
+      }, 350);
+    }
+    flashSkip.addEventListener('click', () => endFlash(true));
+    addEventListener('keydown', (e) => { if (e.key === 'Escape') endFlash(true); });
 
     // ---- blinking (JS-driven so it never gets stuck) ----
     function scheduleBlink() {
