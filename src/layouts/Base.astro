@@ -1,6 +1,9 @@
 ---
 import '../styles/global.css';
 import { site } from '../site.config';
+
+const ogImage = new URL('/og.png', Astro.site).href;
+const pageUrl = new URL(Astro.url.pathname, Astro.site).href;
 ---
 <!doctype html>
 <html lang="en">
@@ -12,6 +15,16 @@ import { site } from '../site.config';
     <meta property="og:title" content={site.title} />
     <meta property="og:description" content={site.description} />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content={pageUrl} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Engineer by day. Creator by weekend. — with Bit, a brick-built bird." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={site.title} />
+    <meta name="twitter:description" content={site.description} />
+    <meta name="twitter:image" content={ogImage} />
+    <link rel="canonical" href={pageUrl} />
     <meta name="theme-color" content="#F2EFE8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
