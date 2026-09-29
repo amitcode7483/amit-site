@@ -1,0 +1,565 @@
+---
+// "The Path" — a walkable, game-like journey from June 2000 to now.
+// Bitty walks from stop to stop (Next/Back, arrow keys, swipe, the year scrubber or the mini-map),
+// collects skill bricks, meets the people of each chapter (click them — they join the walk),
+// and grows up into Bit at the finish. Story content lives in src/data/journey.ts.
+import { journey, isPlaceholder } from '../data/journey';
+
+const H = 420, GROUND = 340, FIRST = 320, SPACING = 620;
+// [Placeholders] show (dashed yellow) only in `npm run dev`. The published site quietly leaves them out.
+const SHOW_TODO = import.meta.env.DEV;
+const strip = (t = '') => t.replace(/\s*\[[^\]]+\]/g, '').trim();
+const clean = (s: (typeof journey)[number]) => SHOW_TODO ? s : {
+  ...s,
+  place: isPlaceholder(s.place) ? '' : s.place,
+  story: strip(s.story),
+  proud: s.proud && !isPlaceholder(s.proud) ? s.proud : undefined,
+  skills: s.skills.filter((k) => !isPlaceholder(k)),
+  people: s.people.filter((p) => !isPlaceholder(p.who) && !isPlaceholder(p.line)),
+};
+const stops = journey.map(clean).map((s, i) => ({ ...s, i, x: FIRST + i * SPACING }));
+const WORLD_W = FIRST + (stops.length - 1) * SPACING + 420;
+const moveIndex = stops.findIndex((s) => s.event === 'flight');
+const eraColour = (i: number) => ['#F57F20', '#D01012', '#0055BF', '#237841', '#7A4A2A', '#0055BF', '#D01012', '#237841', '#0055BF', '#F7C600'][i % 10];
+const personColours = ['#D01012', '#0055BF', '#237841', '#F57F20', '#7A4A2A', '#6B3FA0'];
+const realSkills = (s: string[]) => s.filter((k) => !isPlaceholder(k));
+// lay skill bricks out left to right, each sized to its label
+const skillBricks = (skills: string[], x0: number) => {
+  let x = x0;
+  return skills.map((k) => {
+    const w = Math.max(70, Math.round(k.length * 8.4 + 22));
+    const b = { k, w, x };
+    x += w + 10;
+    return b;
+  });
+};
+---
+<section class="jp" data-jp aria-label="Career journey">
+  <div class="jp-hud">
+    <div class="jp-inv" aria-live="polite">
+      <span class="mono">Collected</span>
+      <span class="jp-inv-bricks" data-inv></span>
+    </div>
+    <div class="jp-count mono" data-count>0 skills · 0 good people</div>
+  </div>
+
+  <div class="jp-scene" data-scene tabindex="0" aria-label="The path. Use left and right arrow keys to walk.">
+    <svg class="jp-world" data-world viewBox={`0 0 ${WORLD_W} ${H}`} width={WORLD_W} height={H} aria-hidden="true">
+      <defs>
+        <linearGradient id="jp-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#DCEBF8" /><stop offset="1" stop-color="#F6F9FC" />
+        </linearGradient>
+      </defs>
+      <rect x="0" y="0" width={WORLD_W} height={H} fill="url(#jp-sky)" />
+
+      {/* Sydney side of the world: sea + a bridge in the distance */}
+      {moveIndex > 0 && (
+        <g>
+          <rect x={stops[moveIndex].x - 200} y={GROUND - 6} width="400" height="80" fill="#5C8AE0" opacity=".55" />
+          <path d={`M ${stops[moveIndex].x + 520} ${GROUND - 20} Q ${stops[moveIndex].x + 700} ${GROUND - 170} ${stops[moveIndex].x + 880} ${GROUND - 20}`}
+            fill="none" stroke="#9AA7B4" stroke-width="10" />
+          <rect x={stops[moveIndex].x + 520} y={GROUND - 60} width={360} height="8" fill="#9AA7B4" />
+        </g>
+      )}
+
+      {/* the road: a long baseplate */}
+      <rect x="0" y={GROUND} width={WORLD_W} height={H - GROUND} fill="#237841" />
+      {Array.from({ length: Math.ceil(WORLD_W / 40) }, (_, k) => (
+        <rect x={k * 40 + 10} y={GROUND - 8} width="22" height="10" rx="3" fill="#2E9152" />
+      ))}
+      <rect x="0" y={GROUND + 44} width={WORLD_W} height="36" fill="#1B5E33" />
+
+      {stops.map((s) => {
+        const h = 90 + s.i * 16;
+        const c = eraColour(s.i);
+        const skills = realSkills(s.skills);
+        return (
+          <g class="jp-stop" data-stop={s.i}>
+            {/* dot-com storm */}
+            {s.event === 'storm' && (
+              <g class="jp-storm">
+                <g fill="#8C96A3">
+                  <rect x={s.x - 160} y="40" width="220" height="40" rx="20" />
+                  <rect x={s.x - 110} y="20" width="120" height="40" rx="20" />
+                  <rect x={s.x + 60} y="54" width="200" height="36" rx="18" />
+                </g>
+                <path class="jp-bolt" d={`M ${s.x + 120} 90 l -18 40 h 16 l -12 36 l 34 -48 h -16 l 12 -28 z`} fill="#F7C600" />
+                <g class="jp-rain" stroke="#7F9BBF" stroke-width="3" stroke-linecap="round">
+                  {Array.from({ length: 26 }, (_, k) => (
+                    <line x1={s.x - 170 + k * 17} y1={90 + (k % 4) * 18} x2={s.x - 178 + k * 17} y2={110 + (k % 4) * 18} />
+                  ))}
+                </g>
+                <text class="jp-tag" x={s.x - 150} y="16">2001–02: the dot-com storm</text>
+              </g>
+            )}
+
+            {/* building (grows over the career) */}
+            {s.event !== 'flight' && s.event !== 'finish' && (
+              <g>
+                {[0, 1, 2].map((k) => <rect x={s.x + 76 + k * 40} y={GROUND - h - 9} width="22" height="11" rx="3" fill={c} />)}
+                <rect x={s.x + 60} y={GROUND - h} width="140" height={h} rx="6" fill={c} />
+                <rect x={s.x + 60} y={GROUND - 12} width="140" height="12" fill="rgba(0,0,0,.18)" />
+                {Array.from({ length: Math.floor((h - 30) / 34) }, (_, r) =>
+                  [0, 1, 2].map((k) => <rect x={s.x + 76 + k * 40} y={GROUND - h + 16 + r * 34} width="24" height="18" rx="2" fill="rgba(255,255,255,.55)" />)
+                )}
+                <rect x={s.x + 116} y={GROUND - 34} width="28" height="34" rx="2" fill="rgba(0,0,0,.28)" />
+              </g>
+            )}
+
+            {/* the flight */}
+            {s.event === 'flight' && (
+              <g class="jp-plane" data-plane>
+                <g transform={`translate(${s.x - 60} 120)`}>
+                  <rect x="0" y="0" width="120" height="26" rx="13" fill="#F4F4F4" stroke="rgba(0,0,0,.12)" stroke-width="2" />
+                  <rect x="44" y="-22" width="26" height="70" rx="6" fill="#D01012" />
+                  <rect x="0" y="-18" width="16" height="22" rx="4" fill="#0055BF" />
+                  {[0, 1, 2, 3].map((k) => <rect x={30 + k * 18} y="8" width="10" height="8" rx="2" fill="#5C8AE0" />)}
+                </g>
+                <text class="jp-tag" x={s.x - 70} y="100">Pune → Sydney</text>
+              </g>
+            )}
+
+            {/* finish: goal flag */}
+            {s.event === 'finish' && (
+              <g>
+                <rect x={s.x + 120} y={GROUND - 200} width="8" height="200" fill="#2B2B2B" />
+                <rect class="jp-flag" x={s.x + 128} y={GROUND - 200} width="90" height="56" fill="#F7C600" />
+                <text class="jp-flag-text" x={s.x + 173} y={GROUND - 165}>NOW</text>
+              </g>
+            )}
+
+            {/* signpost */}
+            <rect x={s.x - 34} y={GROUND - 96} width="8" height="96" fill="#7A4A2A" />
+            <rect x={s.x - 80} y={GROUND - 120} width="100" height="34" rx="4" fill="#FFFFFF" stroke="#1B1B1B" stroke-width="3" />
+            <text class="jp-year" x={s.x - 30} y={GROUND - 97}>{s.event === 'finish' ? 'Now' : s.year}</text>
+
+            {/* skill bricks to collect */}
+            {skillBricks(skills, s.x - 40).map((b, n) => (
+              <g class="jp-skill" data-skill={b.k} data-stop={s.i} style={`--d:${n * 0.3}s`}>
+                <rect x={b.x} y={Math.max(50, GROUND - h - 90) + (n % 2) * 30} width={b.w} height="26" rx="5" fill={eraColour(s.i + n + 3)} />
+                <text x={b.x + b.w / 2} y={Math.max(50, GROUND - h - 90) + 18 + (n % 2) * 30}>{b.k}</text>
+              </g>
+            ))}
+
+            {/* people of this chapter */}
+            {s.people.map((p, n) => (
+              <g class="jp-person" data-stop={s.i} data-person={n} role="button" tabindex="-1">
+                <g transform={`translate(${s.x + 250 + n * 56} ${GROUND})`}>
+                  <rect x="-12" y="-30" width="24" height="30" rx="4" fill={personColours[(s.i + n) % personColours.length]} />
+                  <rect x="-10" y="-52" width="20" height="20" rx="4" fill="#F2C230" />
+                  <rect x="-5" y="-45" width="3" height="4" fill="#1B1B1B" /><rect x="2" y="-45" width="3" height="4" fill="#1B1B1B" />
+                  <text class="jp-bang" x="0" y="-62">!</text>
+                </g>
+              </g>
+            ))}
+          </g>
+        );
+      })}
+
+      {/* people who joined walk behind Bitty */}
+      <g data-followers></g>
+
+      {/* Bitty (grows up into Bit at the finish) */}
+      <g class="jp-bitty" data-bitty>
+        <g class="jp-bitty-bob">
+          <g transform="translate(-512 -498)">
+            <rect fill="#F57F20" x="494" y="482" width="14" height="16" rx="3" />
+            <rect fill="#F57F20" x="516" y="482" width="14" height="16" rx="3" />
+            <rect fill="#D01012" x="478" y="452" width="12" height="24" rx="4" />
+            <rect fill="#D01012" x="534" y="452" width="12" height="24" rx="4" />
+            <rect class="jp-body" x="488" y="446" width="48" height="40" rx="6" />
+            <rect fill="rgba(255,255,255,.14)" x="498" y="454" width="28" height="24" rx="4" />
+            <rect fill="#FFD83D" x="494" y="396" width="14" height="10" rx="3" />
+            <rect fill="#FFD83D" x="516" y="396" width="14" height="10" rx="3" />
+            <rect fill="#F7C600" x="480" y="404" width="64" height="46" rx="8" />
+            <rect fill="#FFFFFF" x="487" y="415" width="21" height="21" rx="5" />
+            <rect fill="#FFFFFF" x="516" y="415" width="21" height="21" rx="5" />
+            <rect fill="#1B1B1B" x="496" y="421" width="9" height="9" rx="2" />
+            <rect fill="#1B1B1B" x="525" y="421" width="9" height="9" rx="2" />
+            <rect fill="#F57F20" x="505" y="437" width="14" height="9" rx="3" />
+          </g>
+        </g>
+      </g>
+    </svg>
+    <div class="jp-bubble" data-say hidden></div>
+  </div>
+
+  <div class="jp-controls">
+    <button type="button" class="btn brick c-white jp-nav" data-prev aria-label="Walk back">← Back</button>
+    <div class="jp-scrub">
+      <label class="mono" for="jp-year">Year <b data-year-label>2000</b></label>
+      <input id="jp-year" type="range" min="2000" max="2026" step="1" value="2000" data-year />
+    </div>
+    <button type="button" class="btn brick c-red jp-nav" data-next aria-label="Walk forward">Next →</button>
+  </div>
+
+  <nav class="jp-map" aria-label="Jump to a chapter">
+    {stops.map((s) => (
+      <button type="button" class="jp-dot" data-go={s.i} aria-label={`${s.when}: ${s.title}`}>
+        <span class="mono">{s.event === 'finish' ? 'Now' : s.year}</span>
+      </button>
+    ))}
+  </nav>
+
+  <article class="jp-card brick c-white" data-card aria-live="polite">
+    <p class="jp-when mono" data-when></p>
+    <h2 class="jp-title" data-title></h2>
+    <p class="jp-meta" data-meta></p>
+    <p class="jp-story" data-story></p>
+    <div class="jp-row" data-skills-row>
+      <span class="mono jp-label">Learned</span><span class="jp-chips" data-skills></span>
+    </div>
+    <div class="jp-row" data-people-row>
+      <span class="mono jp-label">People</span><span class="jp-people" data-people></span>
+    </div>
+    <p class="jp-proud" data-proud></p>
+    <div class="jp-finish" data-finish hidden>
+      <p class="jp-finish-line" data-finish-line></p>
+      <div class="jp-finish-ctas">
+        <a class="btn brick c-red" href="/#contact">Let’s build something together →</a>
+        <a class="btn brick c-white" href="/">Back to home</a>
+      </div>
+    </div>
+  </article>
+
+  <details class="jp-list">
+    <summary>Read it as a simple timeline</summary>
+    <ol>
+      {stops.map((s) => (
+        <li>
+          <b>{s.when}</b> — {s.title}. <span class="jp-list-meta">{s.role}{s.company ? ` · ${s.company}` : ''}{s.place ? ` · ${s.place}` : ''}</span>
+          <br /><span class={isPlaceholder(s.story) ? 'todo' : ''}>{s.story}</span>
+        </li>
+      ))}
+    </ol>
+  </details>
+
+  <script type="application/json" data-journey set:html={JSON.stringify(stops)}></script>
+</section>
+
+<style>
+  .jp { display: flex; flex-direction: column; gap: 16px; }
+  .jp-hud { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .jp-inv { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-height: 34px; }
+  .jp-inv .mono { color: var(--muted); }
+  .jp-inv-bricks { display: flex; flex-wrap: wrap; gap: 6px; }
+  .jp-inv-bricks :global(span) {
+    font: 500 12px var(--mono); padding: 5px 9px 7px; border-radius: 4px; color: #fff;
+    box-shadow: inset 0 -3px 0 rgba(0,0,0,.2); animation: jp-pop .35s cubic-bezier(.3,1.6,.5,1);
+  }
+  @keyframes jp-pop { from { transform: scale(.4) translateY(-12px); opacity: 0; } }
+  .jp-count { color: var(--ink-2); }
+
+  .jp-scene { position: relative; height: 380px; overflow: hidden; border-radius: 10px; background: #DCEBF8; outline-offset: 4px;
+    box-shadow: inset 0 -7px 0 rgba(0,0,0,.06), 0 3px 0 rgba(0,0,0,.08); touch-action: pan-y; cursor: grab; }
+  .jp-scene:focus-visible { outline: 3px solid var(--blue); }
+  .jp-world { position: absolute; left: 0; top: 0; transform-origin: 0 0; transition: transform .9s cubic-bezier(.4,.1,.2,1); }
+
+  .jp-year { font: 900 20px var(--display); text-anchor: middle; fill: var(--ink); }
+  .jp-tag { font: 500 14px var(--mono); fill: #4A5563; }
+  .jp-flag-text { font: 900 22px var(--display); text-anchor: middle; fill: var(--ink); }
+  .jp-flag { transform-box: fill-box; transform-origin: 0 50%; animation: jp-wave 1.6s ease-in-out infinite; }
+  @keyframes jp-wave { 50% { transform: skewY(-6deg) scaleX(.94); } }
+
+  .jp-skill text { font: 500 13px var(--mono); fill: #fff; text-anchor: middle; }
+  .jp-skill { transition: opacity .4s, transform .5s; animation: jp-float 2.4s ease-in-out infinite; animation-delay: var(--d); transform-box: fill-box; }
+  @keyframes jp-float { 50% { transform: translateY(-6px); } }
+  .jp-skill.got { opacity: .18; animation: none; }
+
+  .jp-person { cursor: pointer; }
+  .jp-person .jp-bang { font: 900 22px var(--display); fill: var(--red); text-anchor: middle; animation: jp-float 1.2s ease-in-out infinite; }
+  .jp-person.met { opacity: 0; pointer-events: none; transition: opacity .3s; }
+  .jp-person:hover rect:first-child { filter: brightness(1.15); }
+
+  .jp-rain line { animation: jp-rain .6s linear infinite; }
+  .jp-rain line:nth-child(2n) { animation-delay: .3s; }
+  @keyframes jp-rain { from { transform: translateY(-10px); opacity: 0; } 30% { opacity: 1; } to { transform: translateY(24px); opacity: 0; } }
+  .jp-bolt { animation: jp-flash 3s steps(1) infinite; }
+  @keyframes jp-flash { 0%, 92% { opacity: 0; } 93%, 96% { opacity: 1; } }
+
+  .jp-plane { transition: transform 1.6s ease-in-out; }
+  .jp-plane.flying { animation: jp-fly 1.8s ease-in-out; }
+  @keyframes jp-fly { from { transform: translate(-260px, 60px) rotate(-6deg); } to { transform: none; } }
+
+  .jp-bitty { transition: transform .9s cubic-bezier(.4,.1,.2,1); }
+  .jp-body { fill: #237841; transition: fill .6s; }
+  .grown .jp-body { fill: #0055BF; }
+  .walking .jp-bitty-bob { animation: jp-walk .22s ease-in-out infinite alternate; }
+  @keyframes jp-walk { from { transform: translateY(0) rotate(-3deg); } to { transform: translateY(-8px) rotate(3deg); } }
+
+  .jp-bubble {
+    position: absolute; z-index: 2; left: 50%; top: 18px; transform: translateX(-50%); max-width: min(420px, 88%);
+    padding: 10px 14px 12px; border-radius: 8px; background: #fff; font: 700 15px var(--display); text-align: center;
+    box-shadow: 0 0 0 3px var(--ink), 0 5px 0 3px var(--ink);
+  }
+
+  .jp-controls { display: flex; align-items: center; gap: 16px; }
+  .jp-nav { margin-top: 0; }
+  .jp-scrub { flex: 1; display: flex; align-items: center; gap: 14px; }
+  .jp-scrub label { white-space: nowrap; color: var(--muted); }
+  .jp-scrub label b { color: var(--ink); font-weight: 500; }
+  .jp-scrub input { flex: 1; accent-color: var(--red); height: 32px; }
+
+  .jp-map { display: flex; gap: 6px; flex-wrap: wrap; }
+  .jp-dot { border: 0; cursor: pointer; padding: 6px 10px 8px; border-radius: 5px; background: #EFEBE3; color: var(--ink);
+    box-shadow: inset 0 -3px 0 rgba(0,0,0,.1); }
+  .jp-dot .mono { font-size: 12px; letter-spacing: .04em; }
+  .jp-dot.seen { background: #FFF6CC; }
+  .jp-dot[aria-current="step"] { background: var(--ink); color: #fff; }
+
+  .jp-card { padding: 30px 32px 36px; }
+  .jp-when { margin: 0; color: var(--muted); }
+  .jp-title { margin: 6px 0 4px; font: 900 clamp(26px, 3vw, 36px)/1.08 var(--display); letter-spacing: -.02em; }
+  .jp-meta { margin: 0 0 14px; font-size: 14px; font-weight: 600; color: var(--muted); }
+  .jp-story { margin: 0 0 16px; font-size: 17px; line-height: 1.6; max-width: 70ch; }
+  .jp-row { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; margin-bottom: 10px; }
+  .jp-label { color: var(--muted); min-width: 70px; }
+  .jp-chips, .jp-people { display: flex; flex-wrap: wrap; gap: 8px; }
+  .jp-chips :global(span) { font: 500 13px var(--mono); padding: 5px 10px 7px; border-radius: 4px; background: #EFEBE3; box-shadow: inset 0 -3px 0 rgba(0,0,0,.08); }
+  .jp-people :global(button) {
+    border: 0; cursor: pointer; text-align: left; padding: 8px 12px 10px; border-radius: 6px; background: #EFEBE3; color: var(--ink);
+    font: 600 14px var(--sans); box-shadow: inset 0 -3px 0 rgba(0,0,0,.08); max-width: 100%;
+  }
+  .jp-people :global(button b) { font-family: var(--display); }
+  .jp-people :global(button.met) { background: #E7F4EA; }
+  .jp-proud { margin: 12px 0 0; font-weight: 600; }
+  :global(.todo) { border: 1.5px dashed #C9A227; background: #FFF8DC !important; color: #7A5B00; border-radius: 4px; padding: 0 4px; }
+  .jp-finish { margin-top: 20px; padding-top: 18px; border-top: 2px dashed #E2DACD; }
+  .jp-finish-line { margin: 0 0 14px; font: 900 22px var(--display); }
+  .jp-finish-ctas { display: flex; flex-wrap: wrap; gap: 12px; }
+
+  .jp-list summary { cursor: pointer; font-weight: 700; color: var(--muted); }
+  .jp-list ol { margin: 12px 0 0; padding-left: 22px; line-height: 1.6; }
+  .jp-list li { margin-bottom: 10px; }
+  .jp-list-meta { color: var(--muted); font-size: 14px; }
+
+  @media (max-width: 760px) {
+    .jp-scene { height: 280px; }
+    .jp-controls { flex-wrap: wrap; }
+    .jp-scrub { order: 3; flex-basis: 100%; }
+    .jp-card { padding: 22px 20px 28px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .jp-world, .jp-bitty { transition: none; }
+    .jp-rain line, .jp-bolt, .jp-skill, .jp-flag, .jp-person .jp-bang, .walking .jp-bitty-bob, .jp-plane.flying { animation: none; }
+  }
+</style>
+
+<script>
+  type Person = { who: string; line: string };
+  type Stop = { i: number; x: number; year: number; when: string; company: string; role: string; place: string;
+    title: string; story: string; skills: string[]; people: Person[]; proud?: string; event?: string };
+
+  const root = document.querySelector<HTMLElement>('[data-jp]');
+  if (root) {
+    const $ = <T extends Element>(s: string) => root.querySelector<T>(s)!;
+    const stops: Stop[] = JSON.parse($('[data-journey]').textContent || '[]');
+    const scene = $<HTMLElement>('[data-scene]');
+    const world = $<SVGSVGElement>('[data-world]');
+    const bitty = $<SVGGElement>('[data-bitty]');
+    const followers = $<SVGGElement>('[data-followers]');
+    const bubble = $<HTMLElement>('[data-say]');
+    const yearInput = $<HTMLInputElement>('[data-year]');
+    const NS = 'http://www.w3.org/2000/svg';
+    const H = 420, GROUND = 340;
+    const WORLD_W = Number(world.getAttribute('width'));
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isTodo = (s = '') => /\[[^\]]+\]/.test(s);
+    const COLOURS = ['#D01012', '#F57F20', '#0055BF', '#237841', '#7A4A2A', '#6B3FA0', '#2B8C8C'];
+
+    let current = -1;
+    const collected: string[] = [];
+    const met: { stop: number; n: number; colour: string }[] = [];
+    let sayTimer = 0;
+
+    function say(text: string, ms = 2600) {
+      bubble.textContent = text;
+      bubble.hidden = false;
+      clearTimeout(sayTimer);
+      sayTimer = window.setTimeout(() => { bubble.hidden = true; }, ms);
+    }
+
+    // ---- camera + Bitty ----
+    function layout() {
+      const scale = scene.clientHeight / H;
+      const w = scene.clientWidth;
+      const x = stops[Math.max(0, current)].x;
+      let tx = w / 2 - x * scale;
+      tx = Math.min(0, Math.max(w - WORLD_W * scale, tx));
+      world.style.transform = `translateX(${tx}px) scale(${scale})`;
+      world.style.width = `${WORLD_W}px`;
+      world.style.height = `${H}px`;
+    }
+    function placeBitty(i: number) {
+      const growth = 0.75 + (i / (stops.length - 1)) * 0.75;   // 0.75 → 1.5
+      const bx = stops[i].x - 70 - growth * 50;   // stays clear of the signpost as he grows
+      bitty.style.transform = `translate(${bx}px, ${GROUND}px) scale(${growth})`;
+      root!.classList.toggle('grown', i === stops.length - 1);
+      renderFollowers(bx, growth);
+    }
+    function renderFollowers(bx: number, growth: number) {
+      followers.replaceChildren();
+      met.forEach((m, k) => {
+        const g = document.createElementNS(NS, 'g');
+        g.setAttribute('transform', `translate(${bx - 50 * growth - 34 * (k + 1)} ${GROUND})`);
+        g.innerHTML = `<rect x="-10" y="-26" width="20" height="26" rx="4" fill="${m.colour}"/>` +
+          `<rect x="-9" y="-45" width="18" height="18" rx="4" fill="#F2C230"/>` +
+          `<rect x="-4" y="-39" width="3" height="4" fill="#1B1B1B"/><rect x="2" y="-39" width="3" height="4" fill="#1B1B1B"/>`;
+        followers.appendChild(g);
+      });
+    }
+
+    // ---- HUD ----
+    function renderHud() {
+      const inv = $('[data-inv]');
+      inv.replaceChildren(...collected.map((k, n) => {
+        const s = document.createElement('span');
+        s.textContent = k;
+        s.style.background = COLOURS[n % COLOURS.length];
+        return s;
+      }));
+      $('[data-count]').textContent = stops.some((x) => x.people.length)
+        ? `${collected.length} skill${collected.length === 1 ? '' : 's'} · ${met.length} good ${met.length === 1 ? 'person' : 'people'}`
+        : `${collected.length} skill${collected.length === 1 ? '' : 's'} collected`;
+    }
+
+    // ---- card ----
+    function setText(sel: string, text: string) {
+      const el = $<HTMLElement>(sel);
+      el.textContent = text;
+      el.classList.toggle('todo', isTodo(text));
+      el.hidden = !text;
+    }
+    function renderCard(s: Stop) {
+      setText('[data-when]', `${s.when}${s.place ? ' · ' + s.place : ''}`);
+      setText('[data-title]', s.title);
+      $<HTMLElement>('[data-meta]').textContent = [s.role, s.company].filter(Boolean).join(' · ');
+      setText('[data-story]', s.story);
+      setText('[data-proud]', s.proud ? `Proud of: ${s.proud}` : '');
+
+      const chips = $<HTMLElement>('[data-skills]');
+      chips.replaceChildren(...s.skills.map((k) => {
+        const c = document.createElement('span');
+        c.textContent = k;
+        if (isTodo(k)) c.classList.add('todo');
+        return c;
+      }));
+      $<HTMLElement>('[data-skills-row]').hidden = !s.skills.length;
+
+      const people = $<HTMLElement>('[data-people]');
+      people.replaceChildren(...s.people.map((p, n) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        const who = document.createElement('b');
+        who.textContent = p.who;
+        b.append(who);
+        const known = met.some((m) => m.stop === s.i && m.n === n);
+        if (known) { b.classList.add('met'); b.append(` — ${p.line}`); }
+        else b.append(' — say hi');
+        if (isTodo(p.who) || (known && isTodo(p.line))) b.classList.add('todo');
+        b.addEventListener('click', () => meet(s.i, n));
+        return b;
+      }));
+      $<HTMLElement>('[data-people-row]').hidden = !s.people.length;
+
+      const finish = $<HTMLElement>('[data-finish]');
+      finish.hidden = s.event !== 'finish';
+      if (s.event === 'finish') {
+        const years = new Date().getFullYear() - 2000;
+        const anyPeople = stops.some((x) => x.people.length);
+        $('[data-finish-line]').textContent = anyPeople
+          ? `Journey complete — ${years} years, ${collected.length} skills, ${met.length} good ${met.length === 1 ? 'person' : 'people'} met on the way.`
+          : `Journey complete — ${years} years and ${collected.length} skills. Thanks for walking it with me.`;
+      }
+
+      root!.querySelectorAll<HTMLButtonElement>('[data-go]').forEach((d) => {
+        const i = Number(d.dataset.go);
+        if (i === s.i) d.setAttribute('aria-current', 'step'); else d.removeAttribute('aria-current');
+      });
+    }
+
+    // ---- actions ----
+    function go(i: number, fromScrub = false) {
+      i = Math.max(0, Math.min(stops.length - 1, i));
+      if (i === current) return;
+      const s = stops[i];
+      current = i;
+
+      if (!reduced) {
+        root!.classList.add('walking');
+        window.setTimeout(() => root!.classList.remove('walking'), 900);
+      }
+      layout();
+      placeBitty(i);
+
+      // collect skills from every stop up to here
+      for (let k = 0; k <= i; k++) {
+        stops[k].skills.filter((x) => !isTodo(x)).forEach((sk) => { if (!collected.includes(sk)) collected.push(sk); });
+        root!.querySelectorAll<SVGGElement>(`.jp-skill[data-stop="${k}"]`).forEach((el) => el.classList.add('got'));
+        root!.querySelector(`[data-go="${k}"]`)?.classList.add('seen');
+      }
+      renderHud();
+      renderCard(s);
+      if (!fromScrub) { yearInput.value = String(s.year); }
+      $('[data-year-label]').textContent = s.event === 'finish' ? 'Now' : String(s.year);
+
+      if (s.event === 'storm') say('2001–02: the dot-com bust. Keep learning, keep going.');
+      else if (s.event === 'flight') {
+        const plane = root!.querySelector('[data-plane]');
+        plane?.classList.remove('flying'); void (plane as SVGGElement)?.getBoundingClientRect(); plane?.classList.add('flying');
+        say('Pune → Sydney. Here we go!');
+      } else if (s.event === 'finish') say('All grown up. Hi, I’m Bit.', 3200);
+      else if (s.people.length && !met.some((m) => m.stop === i)) say('New people here — click them to say hi.', 2200);
+    }
+    function meet(stopIndex: number, n: number) {
+      if (!met.some((m) => m.stop === stopIndex && m.n === n)) {
+        met.push({ stop: stopIndex, n, colour: COLOURS[(stopIndex + n) % COLOURS.length] });
+        root!.querySelector(`.jp-person[data-stop="${stopIndex}"][data-person="${n}"]`)?.classList.add('met');
+      }
+      const p = stops[stopIndex].people[n];
+      say(`${p.who}: ${p.line}`, 3400);
+      if (stopIndex === current) renderCard(stops[current]);
+      placeBitty(current);
+      renderHud();
+    }
+
+    $('[data-next]').addEventListener('click', () => go(current + 1));
+    $('[data-prev]').addEventListener('click', () => go(current - 1));
+    root.querySelectorAll<HTMLButtonElement>('[data-go]').forEach((b) => b.addEventListener('click', () => go(Number(b.dataset.go))));
+    yearInput.addEventListener('input', () => {
+      const y = Number(yearInput.value);
+      let idx = stops.findIndex((s) => s.year === y);
+      if (idx < 0) stops.forEach((s, k) => { if (s.year <= y) idx = k; });
+      if (idx < 0) idx = 0;
+      $('[data-year-label]').textContent = String(y);
+      go(idx, true);
+    });
+
+    // click people in the scene
+    root.querySelectorAll<SVGGElement>('.jp-person').forEach((el) =>
+      el.addEventListener('click', (e) => { e.stopPropagation(); meet(Number(el.dataset.stop), Number(el.dataset.person)); }));
+
+    // keyboard: arrows while the journey is on screen
+    let onScreen = false;
+    new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; }, { threshold: 0.3 }).observe(scene);
+    addEventListener('keydown', (e) => {
+      const t = e.target as HTMLElement;
+      if (!onScreen || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable) return;
+      if (e.key === 'ArrowRight') { e.preventDefault(); go(current + 1); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); go(current - 1); }
+    });
+
+    // swipe / drag on the scene
+    let downX: number | null = null;
+    scene.addEventListener('pointerdown', (e) => { downX = e.clientX; });
+    addEventListener('pointerup', (e) => {
+      if (downX === null) return;
+      const dx = e.clientX - downX;
+      downX = null;
+      if (Math.abs(dx) > 50) go(current + (dx < 0 ? 1 : -1));
+    });
+
+    addEventListener('resize', layout);
+    go(0);
+  }
+</script>

@@ -173,3 +173,12 @@ a.project:hover { transform: translateY(-4px); }
   section.block { padding-top: 72px; }
   .contact { padding-top: 48px; gap: 48px; }
 }
+
+/* Journey teaser on the home page */
+.journey-teaser { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; padding: 30px 32px 36px; color: var(--white); text-decoration: none; transition: transform .2s ease; }
+.journey-teaser:hover { transform: translateY(-3px); }
+.journey-teaser-copy { display: flex; flex-direction: column; gap: 8px; max-width: 640px; }
+.journey-teaser-copy .mono { color: #CFE0FF; }
+.journey-teaser-copy b { font-family: var(--display); font-weight: 900; font-size: clamp(26px, 3vw, 36px); line-height: 1.05; letter-spacing: -.02em; }
+.journey-teaser-copy span:last-child { font-size: 17px; line-height: 1.5; opacity: .92; }
+.journey-teaser .btn { color: var(--ink); }

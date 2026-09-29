@@ -1,0 +1,49 @@
+---
+import Base from '../layouts/Base.astro';
+import JourneyPath from '../components/JourneyPath.astro';
+---
+<Base>
+  <div class="wrap">
+    <header class="nav">
+      <a class="logo" href="/" aria-label="Home">
+        <span class="logo-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        amit
+      </a>
+      <nav class="nav-links" aria-label="Main">
+        <a href="/#work">Work</a>
+        <a href="/#channels">Channels</a>
+        <a href="/#build">Play</a>
+        <a class="btn brick c-black" href="/#contact">Let’s talk</a>
+      </nav>
+    </header>
+
+    <main class="journey">
+      <section class="journey-hero">
+        <div class="eyebrow mono"><i></i>The path · June 2000 → now</div>
+        <h1>It was always about <em>the people.</em></h1>
+        <p class="lede">
+          From a young Flash developer walking into the big IT world, through the dot-com bust, across two countries —
+          one good team at a time. Walk it with Bitty: collect the skills, meet the people, watch him grow up.
+        </p>
+        <p class="journey-how mono">← → keys · swipe · drag the year · or tap a year below</p>
+      </section>
+
+      <JourneyPath />
+    </main>
+  </div>
+
+  <footer class="contact brick c-black" id="contact">
+    <div class="contact-top">
+      <h2>The path keeps going. <em>Walk part of it with me?</em></h2>
+      <a class="btn brick c-yellow" href="/#contact">Say hello →</a>
+    </div>
+  </footer>
+</Base>
+
+<style>
+  .journey { padding-bottom: 24px; }
+  .journey-hero { padding: 24px 0 28px; display: flex; flex-direction: column; gap: 18px; }
+  .journey-hero h1 { margin: 0; font-family: var(--display); font-weight: 900; font-size: clamp(44px, 6.4vw, 92px); line-height: .95; letter-spacing: -.035em; }
+  .journey-hero h1 em { font-style: normal; color: var(--red); }
+  .journey-how { color: var(--muted); margin: 0; }
+</style>
